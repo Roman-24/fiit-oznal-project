@@ -96,10 +96,13 @@ cat('Nan záznamy a duplicitné záznamy boli odstránené', '\n')
 # Zlúčenie súborov údajov
 cat('Nasleduje zmergovanie datasetov:', '\n')
 # Odstránenie nepotrebných stĺpcov
-labor_stations <- labor_stations[, -c(2, 4:5)]
+labor_stations <- labor_stations[, -4]
+#head(labor_stations)
 # Merge
 df <- merge(labor_measurements, labor_stations, by = c("latitude", "longitude"), all = FALSE)
 # Odstránenie stĺpcov 'latitude' a 'longitude' lebo ich už viac nepotrebujeme
 df <- df[, !names(df) %in% c('latitude', 'longitude')]
+# reorganizacia stlpcov
+df <- df[, c('location', 'warning', 'QoS', 'revision', 'TEMP', 'PRES', 'PM2.5', 'NOx', 'PM10', 'C2H3NO5', 'CH4', 'Pb', 'NH3', 'SO2', 'O3', 'CO', 'PAHs', 'H2CO', 'CFCs')]
 head(df)
 
