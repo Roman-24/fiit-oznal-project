@@ -1,0 +1,35 @@
+PM2.5 - Particulate Matter (µg/m3)
+PM10 - Particulate Matter (µg/m3)
+NOx - Nitrogen Oxides (µg/m3)
+NO2 - Nitrogen Dioxide (µg/m3)
+SO2 - Sulfur Dioxide  (µg/m3)
+CO - Carbon Monoxide emissions  (µg/m3)
+CO2 - Carbon Dioxide  (µg/m3)
+PAHs - Polycyclic Aromatic Hydrocarbons  (µg/m3)
+NH3 - Ammonia trace  (µg/m3)
+Pb - Lead  (µg/m3)
+TEMP - Temperature (degree Celsius)
+DEWP - Dew point temperature (degree Celsius)
+PRES - Pressure (hPa, <100, 1050>)
+RAIN - Rain (mm)
+WSPM - Wind Speed (m/s)
+WD - Wind Direction
+VOC - Volatile Organic Compounds
+CFCs - Chlorofluorocarbons
+C2H3NO5 - Peroxyacetyl nitrate
+H2CO - Plywood emit formaldehyde
+GSTM1 - Glutathione-S transferase M1
+1-OHP - 1-hydroxypyrene
+2-OHF - 2-hydroxyfluorene
+2-OHNa - 2-hydroxynaphthalene
+N2 - Nitrogen
+O2 - Oxygen
+O3 - Ozone
+Ar - Argon
+Ne - Neon
+CH4 - Methane
+He - Helium
+Kr - Krypton
+I2 - Iodine
+H2 - Hydrogen
+Xe - Xenon

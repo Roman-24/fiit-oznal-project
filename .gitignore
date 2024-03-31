@@ -47,3 +47,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+.idea/
+/.idea/
+.idea
+.idea/*
+.DS_Store
