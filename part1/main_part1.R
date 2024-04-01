@@ -1,4 +1,9 @@
+
+# RomanOFF read dir
+#getwd()
+#setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
 setwd(getwd())
+
 
 # načítanie datasetu
 labor_measurements <- read.csv('./data/measurements.csv', sep='\t')
@@ -105,4 +110,27 @@ df <- df[, !names(df) %in% c('latitude', 'longitude')]
 # reorganizacia stlpcov
 df <- df[, c('location', 'warning', 'QoS', 'revision', 'TEMP', 'PRES', 'PM2.5', 'NOx', 'PM10', 'C2H3NO5', 'CH4', 'Pb', 'NH3', 'SO2', 'O3', 'CO', 'PAHs', 'H2CO', 'CFCs')]
 head(df)
+
+
+############## Linearna regresia ##############
+
+#rozdelime si dataset na trenovací a testovací
+sample <- sample(c(TRUE, FALSE), nrow(df), replace=TRUE, prob=c(0.9,0.1))
+train  <- df[sample, ]
+test   <- df[!sample, ]
+
+
+linear_model <- lm(PM2.5 ~ SO2 + CO, data = train)
+
+summary(linear_model)
+
+# Median ma byť najbližšie k 0
+# Residualy by mali byť +- rovnaké, nie veľký rozdiel
+
+library(ggplot2)
+
+ggplot(df, aes(x = NOx, y = PM2.5)) +
+  geom_point() +  # This adds the data points
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(title = "Linear Regression of PM2.5 on NOx", x = "NOx", y = "PM2.5")
 
