@@ -1,8 +1,8 @@
 
 # RomanOFF read dir
-#getwd()
-#setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
-setwd(getwd())
+getwd()
+setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
+#setwd(getwd())
 
 
 # načítanie datasetu
@@ -112,25 +112,24 @@ df <- df[, c('location', 'warning', 'QoS', 'revision', 'TEMP', 'PRES', 'PM2.5', 
 head(df)
 
 
-############## Linearna regresia ##############
+############## Linearna regression ##############
+## Data Exploration
+library(ggplot2)
+library(GGally)
 
-#rozdelime si dataset na trenovací a testovací
-sample <- sample(c(TRUE, FALSE), nrow(df), replace=TRUE, prob=c(0.9,0.1))
-train  <- df[sample, ]
-test   <- df[!sample, ]
+numeric_df <- df[sapply(df, is.numeric)]
 
+ggpairs(numeric_df,
+        lower = list(continuous = "smooth"),
+        diag = list(continuous = "barDiag"))
 
-linear_model <- lm(PM2.5 ~ SO2 + CO, data = train)
+## Linear model
+# Dep. variable - PM2.5
+# Predictor 1 - PM10
+# Preditor 2 - NH3
 
+linear_model <- lm(PM2.5 ~ PM10 + NH3, data = df)
 summary(linear_model)
 
 # Median ma byť najbližšie k 0
 # Residualy by mali byť +- rovnaké, nie veľký rozdiel
-
-library(ggplot2)
-
-ggplot(df, aes(x = NOx, y = PM2.5)) +
-  geom_point() +  # This adds the data points
-  geom_smooth(method = "lm", se = TRUE) +
-  labs(title = "Linear Regression of PM2.5 on NOx", x = "NOx", y = "PM2.5")
-
