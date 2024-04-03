@@ -12,8 +12,6 @@ library(tidyr)
 library(e1071)
 library(corrplot)
 
-
-
 # načítanie datasetu
 labor_measurements <- read.csv('./data/measurements.csv', sep = '\t')
 labor_stations <- read.csv('./data/stations.csv', sep = '\t')
@@ -43,7 +41,7 @@ colnames(labor_stations)
 
 # Kontrola jedinečných hodnôt a ich počtu
 qos_count <- table(labor_stations$QoS)
-qos_count
+#qos_count
 # Nahradenie špecifických hodnôt
 labor_stations$QoS[labor_stations$QoS == "acceptable"] <- "accep"
 labor_stations$QoS[labor_stations$QoS == "maitennce"] <- "maintenance"
@@ -122,7 +120,7 @@ head(df)
 
 ############## Data Exploration ##############
 
-# Spočítame počet varovaní a vypočítajte percento
+# Spočítame počet varovaní a vypočítame percento
 war_count <- df %>%
   count(warning) %>%
   rename(Warning = warning, Count = n) %>%
@@ -145,26 +143,23 @@ plot_histogram <- function(column_name, data) {
     theme_minimal()
 }
 
-# Vygenerovanie zoznamu grafov histogramov pre každý stĺpec v dátovom rámci
+# Vygenerovanie zoznamu grafov histogramov pre každý stĺpec v df
 histogram_plots <- lapply(colnames(df), function(col) plot_histogram(col, df))
 
-# Výpočet skewness pre každý stĺpec v dátovom rámci 'df'
+# Výpočet skewness
 # Identifikácia riadkov s nečíselnými hodnotami v údajne číselnom stĺpci
 df_nums_only <- df %>%
   select(-location, -QoS, -revision) %>%
   select(where(is.numeric))
 
-# This loop will check each numeric column for any values that cannot be converted to numeric
+# skontrolujeme každý číselný stĺpec, či sa v ňom nenachádzajú hodnoty, ktoré sa nedajú dať na číslo
 for (col in names(df_nums_only)) {
-  # Convert factors to characters before testing for numeric values
   if (is.factor(df_nums_only[[col]])) {
     df_nums_only[[col]] <- as.character(df_nums_only[[col]])
   }
 
-  # Test if the column can be converted to numeric and coerce non-convertible values to NA
   if (!all(sapply(df_nums_only[[col]], is.numeric))) {
     warning(paste("Non-numeric values found in column:", col))
-    # Coerce to numeric, warning will show non-numeric values coerced to NA
     df_nums_only[[col]] <- as.numeric(as.character(df_nums_only[[col]]))
   }
 }
@@ -174,25 +169,23 @@ sapply(df_nums_only, skewness)
 df_nums_only_corr <- cor(df_nums_only, use = "complete.obs")  # 'use' parameter handles missing values
 
 # Vytvorenie masky pre hodnoty, ktoré spĺňajú kritériá
-# vyfiltrovanie korelácií s abs hodnotou väčšou ako 0.39
+# vyfiltrovanie korelácií s abs hodnotou podla:
 threshold_high <- 0.39
 threshold_low <- -0.39
 mask <- abs(df_nums_only_corr) >= threshold_high & df_nums_only_corr != 1
 
-# Copy the original correlation matrix
+# nahradenie hodnot kt nesplnanu kriteria NaNkom
 filtered_corr_matrix <- df_nums_only_corr
-
-# Apply the mask: Replace values that do NOT meet the criteria with NA
 filtered_corr_matrix[!mask] <- NA
 
-# Now, plot the filtered correlation matrix
+# vykreslime filtrovanú korelačnú maticu
 corrplot(filtered_corr_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45, title = "Filtered Correlation Matrix (|r| >= 0.39)")
-
 
 # Významnejšie korelácie sa javia byť medzi týmito atribútmi:
 # PM2.5 - PM10
 # PM10 - NH3
 # PM10 - C2H3NO5
+cat("# Významnejšie korelácie sa javia byť medzi týmito atribútmi:\n PM2.5 - PM10\n PM10 - NH3\n PM10 - C2H3NO5")
 
 ############## Linear regression ##############
 theme_set(theme_bw())
