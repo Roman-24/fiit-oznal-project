@@ -112,10 +112,13 @@ df <- df[, c('location', 'warning', 'QoS', 'revision', 'TEMP', 'PRES', 'PM2.5', 
 head(df)
 
 
-############## Linearna regression ##############
+############## Linear regression ##############
 ## Data Exploration
 library(ggplot2)
 library(GGally)
+library(tidyverse)
+library(caret)
+theme_set(theme_bw())
 
 numeric_df <- df[sapply(df, is.numeric)]
 
@@ -123,13 +126,29 @@ ggpairs(numeric_df,
         lower = list(continuous = "smooth"),
         diag = list(continuous = "barDiag"))
 
-## Linear model
-# Dep. variable - PM2.5
-# Predictor 1 - PM10
-# Preditor 2 - NH3
+## Rozdelenie
+sample <- sample(c(TRUE, FALSE), nrow(df), replace=TRUE, prob=c(0.7,0.3))
+train <- df[sample, ]
+test <- df[!sample, ]
 
-linear_model <- lm(PM2.5 ~ PM10 + NH3, data = df)
-summary(linear_model)
 
-# Median ma byť najbližšie k 0
-# Residualy by mali byť +- rovnaké, nie veľký rozdiel
+Model <-train(TEMP ~ PM2.5 + CO, data = train,
+              method = 'lm',
+              na.action = na.omit,
+              preProcess=c("scale", "center"),
+              trControl=trainControl(method = "none")
+              )
+
+Model.training <- predict(Model,train)
+Model.testing <- predict(Model, test)
+
+plot(train$PM2.5, Model.training, col = "blue")
+plot(test$PM2.5, Model.testing, col = "blue")
+
+# Model performance summary
+
+summary(Model)
+
+R.train <- cor(train$PM2.5, Model.training)
+R.test <- cor(test$PM2.5, Model.testing)
+
