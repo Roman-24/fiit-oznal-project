@@ -11,6 +11,7 @@ library(caret)
 library(tidyr)
 library(e1071)
 library(corrplot)
+library(MASS)
 
 # načítanie datasetu
 labor_measurements <- read.csv('./data/measurements.csv', sep = '\t')
@@ -224,3 +225,21 @@ R.test <- cor(test$PM2.5, Model.testing)
 
 
 # klasifikacia
+
+# Vytvorenie kategorickej premennej z numerického atribútu 'warning'
+df$warning <- as.factor(df$warning)
+
+# rozdelenie data setu na test a train
+set.seed(123)  # aby to bolo opakovatelne
+index <- sample(1:nrow(df), round(0.7 * nrow(df)))
+trainData <- df[index, ]
+testData <- df[-index, ]
+
+# Trénovanie modelu Linear Discriminant Analysis (LDA)
+ldaModel <- lda(warning ~ ., data = trainData)
+
+# Predpovedanie na testovacom súbore údajov
+predictions <- predict(ldaModel, newdata = testData)$class
+
+# evaluacia modelu
+table(Predicted = predictions, Actual = testData$warning)
