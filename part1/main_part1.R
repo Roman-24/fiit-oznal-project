@@ -188,40 +188,41 @@ corrplot(filtered_corr_matrix, method = "color", type = "upper", tl.col = "black
 # PM10 - C2H3NO5
 cat("# Významnejšie korelácie sa javia byť medzi týmito atribútmi:\n PM2.5 - PM10\n PM10 - NH3\n PM10 - C2H3NO5")
 
-############## Linear regression ##############
-theme_set(theme_bw())
+################### Linear regression ##################
 
-numeric_df <- df[sapply(df, is.numeric)]
+#numeric_df <- df[sapply(df, is.numeric)]
+#ggpairs(numeric_df,
+#        lower = list(continuous = "smooth"),
+#        diag = list(continuous = "barDiag"))
 
-ggpairs(numeric_df,
-        lower = list(continuous = "smooth"),
-        diag = list(continuous = "barDiag"))
+cor(numeric_df, method = "pearson")
 
-## Rozdelenie
-sample <- sample(c(TRUE, FALSE), nrow(df), replace = TRUE, prob = c(0.7, 0.3))
-train <- df[sample,]
-test <- df[!sample,]
+# The model -------------------------------------------
 
+# PM2.5 – the most harmful pollution
+PM25Model <- lm(PM2.5 ~ PM10  + SO2 + CO, data = df)
+summary(PM25Model)
 
-Model <- train(TEMP ~ PM2.5 + CO, data = train,
-               method = 'lm',
-               na.action = na.omit,
-               preProcess = c("scale", "center"),
-               trControl = trainControl(method = "none")
-)
+par(mfrow = c(2, 2))
+plot(PM25Model)
+# PM25 = 12.88 - 0.11 * PM10 - 0.23 * SO2 + 0.11 * CO
 
-Model.training <- predict(Model, train)
-Model.testing <- predict(Model, test)
+# Predictions -------------------------------------------
 
-plot(train$PM2.5, Model.training, col = "blue")
-plot(test$PM2.5, Model.testing, col = "blue")
+predict(PM25Model)
+cat("Exptected: 5.72081 , Predicted: ",predict(PM25Model,data.frame(PM10=5.85838,  SO2=11.00024, CO=7.00959)) )
 
-# Model performance summary
+residuals <- PM25Model$residuals
+residuals
+RSS <- sum(residuals^2) # Residual Sum of Squares (RSS)
+RMSE <- sqrt(RSS / length(residuals)) # Root-mean-square deviation
 
-summary(Model)
+cat("Residual Sum of Squares: ",RSS, " Root-mean-square deviation: ", RMSE)
 
-R.train <- cor(train$PM2.5, Model.training)
-R.test <- cor(test$PM2.5, Model.testing)
+## Rozdelenie dát
+# sample <- sample(c(TRUE, FALSE), nrow(df), replace = TRUE, prob = c(0.7, 0.3))
+# train_data <- df[sample,]
+# test_data <- df[!sample,]
 
 
 # klasifikacia
