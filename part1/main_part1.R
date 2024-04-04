@@ -189,35 +189,51 @@ corrplot(filtered_corr_matrix, method = "color", type = "upper", tl.col = "black
 cat("# Významnejšie korelácie sa javia byť medzi týmito atribútmi:\n PM2.5 - PM10\n PM10 - NH3\n PM10 - C2H3NO5")
 
 ################### Linear regression ##################
-
 #numeric_df <- df[sapply(df, is.numeric)]
 #ggpairs(numeric_df,
 #        lower = list(continuous = "smooth"),
 #        diag = list(continuous = "barDiag"))
-#cor(numeric_df, method = "pearson")
+# cor(numeric_df, method = "pearson")
 
-# The model -------------------------------------------
+# rozdelenie data setu na test a train
+set.seed(123)
+sample <- sample(c(TRUE, FALSE), nrow(df), replace = TRUE, prob = c(0.5, 0.3))
+train_data <- df[sample,]
+test_data <- df[!sample,]
+
+######################## Model ##########################
 
 # PM2.5 – the most harmful pollution
-PM25Model <- lm(PM2.5 ~ PM10 + SO2 + CO, data = df)
+PM25Model <- lm(PM2.5 ~ PM10  + SO2 + CO, data = train_data)
 summary(PM25Model)
 
-par(mfrow = c(2, 2))
+par(mar = c(1, 1, 1, 1))
 plot(PM25Model)
-# PM25 = 12.88 - 0.11 * PM10 - 0.23 * SO2 + 0.11 * CO
+# PM25 = 12.88 - 0.11 * PM10 - 0.23 * SO2 + 0.10 * CO
+###################### Predictions ######################
 
-# Predictions -------------------------------------------
+predicted_values <- predict(PM25Model, newdata = test_data)
 
-cat("Exptected: 5.72081 , Predicted: ", predict(PM25Model, data.frame(PM10 = 5.85838, SO2 = 11.00024, CO = 7.00959)))
+# Manualny test
+cat("Expected: 5.72081 , Predicted: ",predict(PM25Model,data.frame(PM10=5.85838,  SO2=11.00024, CO=7.00959)))
 
-residuals <- PM25Model$residuals
-#residuals
-RSS <- sum(residuals^2) # Residual Sum of Squares (RSS)
-RMSE <- sqrt(RSS / length(residuals)) # Root-mean-square deviation
+# Overenie správnosti modelu
+mean_absolute_error <- mean(abs(predicted_values - test_data$PM2.5))
+mean_squared_error <- mean((predicted_values - test_data$PM2.5)^2)
+root_mean_squared_error <- sqrt(mean_squared_error)
 
-cat("Residual Sum of Squares: ", RSS, " Root-mean-square deviation: ", RMSE)
+data.frame(Metric = c("Mean Absolute Error", "Mean Squared Error", "Root Mean Squared Error"), Value = c(mean_absolute_error,mean_squared_error,root_mean_squared_error))
 
-## Rozdelenie dát
+# Plot predicted vs actual
+plot(x=predicted_values, y=test_data$PM2.5,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+
+# Ako realne vyzerajú dáta
+head(data.frame(actual=test_data$PM2.5, predicted=predicted_values))
+
+
 
 # klasifikacia
 df$warning <- as.factor(df$warning)
