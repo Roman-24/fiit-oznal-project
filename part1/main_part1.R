@@ -257,22 +257,19 @@ confMatrix <- table(Predicted = predictions, Actual = testData$warning)
 print(confMatrix)
 
 confMat <- confusionMatrix(predictions, testData$warning)
-
-# Create the confMatMatrix object from confMat$table for plotting
 confMatMatrix <- as.matrix(confMat$table)
-
 confMatMelted <- melt(confMatMatrix)
-
-# Renaming the columns to match ggplot2 expectations
 colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
 
 p <- ggplot(confMatMelted, aes(x = Actual, y = Predicted, fill = Value)) +
-  geom_tile(color = "white") +
-  scale_fill_gradient(low = "white", high = "steelblue") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +
-  xlab('Predicted') +
-  ylab('Actual') +
-  ggtitle('Confusion Matrix - Logistic Regression')
+  geom_tile(color = "white") +  # Tiles for each combination of actual and predicted
+  geom_text(aes(label = Value), color = "black", size = 5) +  # Add text to each tile
+  scale_fill_gradient(low = "white", high = "steelblue") +  # Gradient color for tiles
+  theme_minimal() +  # Minimal theme
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +  # Adjust x-axis text
+  xlab('Predicted') +  # X-axis label
+  ylab('Actual') +  # Y-axis label
+  ggtitle('Confusion Matrix - Logistic Regression')  # Graph title
 
 print(p)
+

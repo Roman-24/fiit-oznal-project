@@ -295,8 +295,10 @@ filtered_corr_matrix[!mask] <- NA
 corrplot(filtered_corr_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45, title = "Filtered Correlation Matrix (|r| >= 0.39)")
 ```
 
-Významnejšie korelácie sa javia byť medzi týmito atribútmi: - PM2.5 -
-PM10 - PM10 - NH3 - PM10 - C2H3NO5
+Významnejšie korelácie sa javia byť medzi týmito atribútmi:
+- PM2.5 - PM10
+- PM10 - NH3
+- PM10 - C2H3NO5
 
 # Lineárna regressia
 
@@ -352,4 +354,78 @@ plot(x=predicted_values, y=test_data$PM2.5,
 
 head(data.frame(actual=test_data$PM2.5, predicted=predicted_values))
 
+```
+
+# Klasifikácia
+
+Warning je kategorický atribút, preto ho musíme pretypovať na faktor
+```{r}
+df$warning <- as.factor(df$warning)
+```
+## Rozdelenie train a test
+```{r}
+set.seed(123)
+cat('nrow', nrow(df))
+cat('ncol', ncol(df))
+index <- sample(1:nrow(df), round(0.7 * nrow(df)))
+trainData <- df[index,]
+testData <- df[-index,]
+```
+
+## Natrenovanie modelu
+```{r}
+logisticModel <- glm(warning ~ ., data = trainData, family = binomial())
+```
+
+### Predikcia na teste
+```{r}
+probabilities <- predict(logisticModel, newdata = testData, type = "response")
+predictions <- ifelse(probabilities > 0.5, levels(testData$warning)[2], levels(testData$warning)[1])
+predictions <- factor(predictions, levels = levels(testData$warning))
+```
+### Evaluacia modelu
+```{r}
+confMatrix <- table(Predicted = predictions, Actual = testData$warning)
+print(confMatrix)
+```
+
+confusionMatrix je tabuľka, ktorá ukazuje počty správnych a nesprávnych predikcií modelu v porovnaní s aktuálnymi hodnotami.
+V tomto prípade sú predictions predpovedané hodnoty z modelu, a testData$warning sú skutočné hodnoty cieľovej premennej.
+Objekt confMat potom obsahuje túto metriku spolu s ďalšími štatistikami výkonu modelu.
+```{r}
+confMat <- confusionMatrix(predictions, testData$warning)
+confMatMatrix <- as.matrix(confMat$table)
+```
+
+Melt mení confMatMatrix do dlhého formátu.
+Dlhý formát je užitočný pre vizualizáciu, pretože každý riadok reprezentuje jednu hodnotu s príslušnými identifikátormi.
+Výsledný objekt confMatMelted má tri stĺpce:
+- jeden pre skutočné hodnoty
+- jeden pre predpovedané hodnoty
+- a jeden pre počet pozorovaní pre každú kombináciu skutočných a predpovedaných hodnôt
+```{r}
+confMatMelted <- melt(confMatMatrix)
+# Actual predstavuje skutočné hodnoty
+# Predicted predstavované hodnoty
+# Value počet prípadov pre každú kombináciu skutočnej a predpovedanej hodnoty
+colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
+```
+## Konštatovanie výsledkov
+```{r}
+p <- ggplot(confMatMelted, aes(x = Actual, y = Predicted, fill = Value)) +
+  geom_tile(color = "white") +  # Tiles for each combination of actual and predicted
+  geom_text(aes(label = Value), color = "black", size = 5) +  # Add text to each tile
+  scale_fill_gradient(low = "white", high = "steelblue") +  # Gradient color for tiles
+  theme_minimal() +  # Minimal theme
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +  # Adjust x-axis text
+  xlab('Predicted') +  # X-axis label
+  ylab('Actual') +  # Y-axis label
+  ggtitle('Confusion Matrix - Logistic Regression')  # Graph title
+```
+- Ľavá horná dlaždica (949) predstavuje pravé negatíva (TN): prípady, keď model správne predpovedal negatívnu triedu.
+- Ľavá spodná dlaždica (1705) predstavuje falošné negatíva (FN): prípady, keď model nesprávne predpovedal negatívnu triedu, hoci v skutočnosti bola pozitívna.
+- Pravá horná dlaždica (3354) predstavuje pravé pozitíva (TP): prípady, keď model správne predpovedal pozitívnu triedu.
+- Pravá spodná časť (1228) predstavuje falošné pozitívne výsledky (FP): prípady, keď model nesprávne predpovedal pozitívnu triedu, hoci v skutočnosti bola negatívna.
+```{r}
+print(p)
 ```
