@@ -12,6 +12,7 @@ library(tidyr)
 library(e1071)
 library(corrplot)
 library(MASS)
+library(reshape2)
 
 # načítanie datasetu
 labor_measurements <- read.csv('./data/measurements.csv', sep = '\t')
@@ -198,7 +199,7 @@ cat("# Významnejšie korelácie sa javia byť medzi týmito atribútmi:\n PM2.5
 # The model -------------------------------------------
 
 # PM2.5 – the most harmful pollution
-PM25Model <- lm(PM2.5 ~ PM10  + SO2 + CO, data = df)
+PM25Model <- lm(PM2.5 ~ PM10 + SO2 + CO, data = df)
 summary(PM25Model)
 
 par(mfrow = c(2, 2))
@@ -207,37 +208,55 @@ plot(PM25Model)
 
 # Predictions -------------------------------------------
 
-cat("Exptected: 5.72081 , Predicted: ",predict(PM25Model,data.frame(PM10=5.85838,  SO2=11.00024, CO=7.00959)) )
+cat("Exptected: 5.72081 , Predicted: ", predict(PM25Model, data.frame(PM10 = 5.85838, SO2 = 11.00024, CO = 7.00959)))
 
 residuals <- PM25Model$residuals
 #residuals
 RSS <- sum(residuals^2) # Residual Sum of Squares (RSS)
 RMSE <- sqrt(RSS / length(residuals)) # Root-mean-square deviation
 
-cat("Residual Sum of Squares: ",RSS, " Root-mean-square deviation: ", RMSE)
+cat("Residual Sum of Squares: ", RSS, " Root-mean-square deviation: ", RMSE)
 
 ## Rozdelenie dát
-# sample <- sample(c(TRUE, FALSE), nrow(df), replace = TRUE, prob = c(0.7, 0.3))
-# train_data <- df[sample,]
-# test_data <- df[!sample,]
-
 
 # klasifikacia
-
-# Vytvorenie kategorickej premennej z numerického atribútu 'warning'
 df$warning <- as.factor(df$warning)
 
-# rozdelenie data setu na test a train
-set.seed(123)  # aby to bolo opakovatelne
+# Splitting the dataset
+set.seed(123)
 index <- sample(1:nrow(df), round(0.7 * nrow(df)))
-trainData <- df[index, ]
-testData <- df[-index, ]
+trainData <- df[index,]
+testData <- df[-index,]
 
-# Trénovanie modelu Linear Discriminant Analysis (LDA)
-ldaModel <- lda(warning ~ ., data = trainData)
+# Train Logistic Regression model
+logisticModel <- glm(warning ~ ., data = trainData, family = binomial())
 
-# Predpovedanie na testovacom súbore údajov
-predictions <- predict(ldaModel, newdata = testData)$class
+# Predict on test set
+probabilities <- predict(logisticModel, newdata = testData, type = "response")
+predictions <- ifelse(probabilities > 0.5, levels(testData$warning)[2], levels(testData$warning)[1])
+predictions <- factor(predictions, levels = levels(testData$warning))
 
-# evaluacia modelu
-table(Predicted = predictions, Actual = testData$warning)
+# Evaluate model performance
+confMatrix <- table(Predicted = predictions, Actual = testData$warning)
+print(confMatrix)
+
+confMat <- confusionMatrix(predictions, testData$warning)
+
+# Create the confMatMatrix object from confMat$table for plotting
+confMatMatrix <- as.matrix(confMat$table)
+
+confMatMelted <- melt(confMatMatrix)
+
+# Renaming the columns to match ggplot2 expectations
+colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
+
+p <- ggplot(confMatMelted, aes(x = Actual, y = Predicted, fill = Value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +
+  xlab('Predicted') +
+  ylab('Actual') +
+  ggtitle('Confusion Matrix - Logistic Regression')
+
+print(p)
