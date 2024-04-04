@@ -150,8 +150,7 @@ histogram_plots <- lapply(colnames(df), function(col) plot_histogram(col, df))
 # Výpočet skewness
 # Identifikácia riadkov s nečíselnými hodnotami v údajne číselnom stĺpci
 df_nums_only <- df %>%
-  select(-location, -QoS, -revision) %>%
-  select(where(is.numeric))
+  select_if(is.numeric)
 
 # skontrolujeme každý číselný stĺpec, či sa v ňom nenachádzajú hodnoty, ktoré sa nedajú dať na číslo
 for (col in names(df_nums_only)) {
@@ -194,8 +193,7 @@ cat("# Významnejšie korelácie sa javia byť medzi týmito atribútmi:\n PM2.5
 #ggpairs(numeric_df,
 #        lower = list(continuous = "smooth"),
 #        diag = list(continuous = "barDiag"))
-
-cor(numeric_df, method = "pearson")
+#cor(numeric_df, method = "pearson")
 
 # The model -------------------------------------------
 
@@ -209,11 +207,10 @@ plot(PM25Model)
 
 # Predictions -------------------------------------------
 
-predict(PM25Model)
 cat("Exptected: 5.72081 , Predicted: ",predict(PM25Model,data.frame(PM10=5.85838,  SO2=11.00024, CO=7.00959)) )
 
 residuals <- PM25Model$residuals
-residuals
+#residuals
 RSS <- sum(residuals^2) # Residual Sum of Squares (RSS)
 RMSE <- sqrt(RSS / length(residuals)) # Root-mean-square deviation
 
