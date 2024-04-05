@@ -67,6 +67,7 @@ library(corrplot)
 library(MASS)
 library(reshape2)
 library(gridExtra)
+library(pROC)
 ```
 Načítanie dát
 ```{r}
@@ -492,6 +493,23 @@ confMatMelted <- melt(confMatMatrix)
 colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
 ```
 ## Konštatovanie výsledkov
+```{r}
+# Vytvorenie ROC objektu
+roc_obj <- roc(testData$warning, probabilities)
+
+# Výpis ROC krivky
+plot(roc_obj, main="ROC Krivka")
+
+# Hľadanie optimálneho cut-off bodu
+# Zvyčajne chceme maximalizovať Youdenov index (J), ktorý je definovaný ako sensitivity + specificity - 1
+coords(roc_obj, "best", best.method="youden")
+
+# Vráti napríklad:
+# threshold (cut-off bod)
+# specificity
+# sensitivity
+
+```
 ```{r}
 p <- ggplot(confMatMelted, aes(x = Actual, y = Predicted, fill = Value)) +
   geom_tile(color = "white") +  # Tiles for each combination of actual and predicted
