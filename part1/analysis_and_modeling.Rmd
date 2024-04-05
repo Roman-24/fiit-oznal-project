@@ -328,6 +328,13 @@ Významnejšie korelácie sa javia byť medzi týmito atribútmi:
 
 # Lineárna regressia
 
+```{r}
+numeric_df <- df[sapply(df, is.numeric)]
+ggpairs(numeric_df,
+        lower = list(continuous = "smooth"),
+        diag = list(continuous = "barDiag"))
+```
+
 ## Rozdelíme dáta na trénovacie a testovacie a vytvoríme Model
 
 ```{r}
@@ -508,6 +515,28 @@ coords(roc_obj, "best", best.method="youden")
 # threshold (cut-off bod)
 # specificity
 # sensitivity
+
+```
+```{r}
+# Vypočítajme krivku ROC a nájdime optimálny point
+roc_obj <- roc(testData$warning, probabilities)
+optimal <- coords(roc_obj, "best", best.method="youden")
+optimal_threshold <- optimal$threshold
+
+# Kontrola platnosti optimálnych súradníc
+if (!is.null(optimal$x) && !is.null(optimal$y)) {
+  # Plot ROC curve
+  plot(roc_obj, main="ROC Curve with Optimal Threshold")
+
+  # Add a point for the optimal threshold
+  points(optimal$x, optimal$y, pch=19, col="red")
+
+  # Add a text label for the optimal threshold
+  text(optimal$x, optimal$y, labels=paste("Threshold:", round(optimal_threshold, 3)), pos=4)
+    segments(optimal$x, optimal$y, optimal$x, 0, col="red", lty=2)
+} else {
+  cat("Optimal coordinates are not available.\n")
+}
 
 ```
 ```{r}
