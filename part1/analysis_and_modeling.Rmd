@@ -11,41 +11,41 @@ Je zložený z dvoch súborov a to:
 - measurements.csv
 - stations.csv
 ## Skratky:
-- PM2.5 - Particulate Matter (µg/m3)
-- PM10 - Particulate Matter (µg/m3)
-- NOx - Nitrogen Oxides (µg/m3)
-- NO2 - Nitrogen Dioxide (µg/m3)
-- SO2 - Sulfur Dioxide  (µg/m3)
-- CO - Carbon Monoxide emissions  (µg/m3)
-- CO2 - Carbon Dioxide  (µg/m3)
-- PAHs - Polycyclic Aromatic Hydrocarbons  (µg/m3)
-- NH3 - Ammonia trace  (µg/m3)
-- Pb - Lead  (µg/m3)
-- TEMP - Temperature (degree Celsius)
-- DEWP - Dew point temperature (degree Celsius)
-- PRES - Pressure (hPa, <100, 1050>)
-- RAIN - Rain (mm)
-- WSPM - Wind Speed (m/s)
-- WD - Wind Direction
-- VOC - Volatile Organic Compounds
-- CFCs - Chlorofluorocarbons
-- C2H3NO5 - Peroxyacetyl nitrate
-- H2CO - Plywood emit formaldehyde
-- GSTM1 - Glutathione-S transferase M1
-- 1-OHP - 1-hydroxypyrene
-- 2-OHF - 2-hydroxyfluorene
-- 2-OHNa - 2-hydroxynaphthalene
-- N2 - Nitrogen
-- O2 - Oxygen
-- O3 - Ozone
-- Ar - Argon
-- Ne - Neon
-- CH4 - Methane
-- He - Helium
-- Kr - Krypton
-- I2 - Iodine
-- H2 - Hydrogen
-- Xe - Xenon
+- PM2.5 - Particulate Matter (µg/m3) <br>
+- PM10 - Particulate Matter (µg/m3) <br>
+- NOx - Nitrogen Oxides (µg/m3) <br>
+- NO2 - Nitrogen Dioxide (µg/m3) <br>
+- SO2 - Sulfur Dioxide  (µg/m3) <br>
+- CO - Carbon Monoxide emissions  (µg/m3) <br>
+- CO2 - Carbon Dioxide  (µg/m3) <br>
+- PAHs - Polycyclic Aromatic Hydrocarbons  (µg/m3) <br>
+- NH3 - Ammonia trace  (µg/m3) <br>
+- Pb - Lead  (µg/m3) <br>
+- TEMP - Temperature (degree Celsius) <br>
+- DEWP - Dew point temperature (degree Celsius) <br>
+- PRES - Pressure (hPa, <100, 1050>) <br>
+- RAIN - Rain (mm) <br>
+- WSPM - Wind Speed (m/s) <br>
+- WD - Wind Direction <br>
+- VOC - Volatile Organic Compounds <br>
+- CFCs - Chlorofluorocarbons <br>
+- C2H3NO5 - Peroxyacetyl nitrate <br>
+- H2CO - Plywood emit formaldehyde <br>
+- GSTM1 - Glutathione-S transferase M1 <br>
+- 1-OHP - 1-hydroxypyrene <br>
+- 2-OHF - 2-hydroxyfluorene <br>
+- 2-OHNa - 2-hydroxynaphthalene <br>
+- N2 - Nitrogen <br>
+- O2 - Oxygen <br>
+- O3 - Ozone <br>
+- Ar - Argon <br>
+- Ne - Neon <br>
+- CH4 - Methane <br>
+- He - Helium <br>
+- Kr - Krypton <br>
+- I2 - Iodine <br>
+- H2 - Hydrogen <br>
+- Xe - Xenon <br>
 
 # Initializácia a načítanie dát
 ```{r}
@@ -66,6 +66,7 @@ library(e1071)
 library(corrplot)
 library(MASS)
 library(reshape2)
+library(gridExtra)
 ```
 Načítanie dát
 ```{r}
@@ -221,6 +222,30 @@ df <- df[, !names(df) %in% c('latitude', 'longitude')]
 # reorganizacia stlpcov
 df <- df[, c('location', 'warning', 'QoS', 'revision', 'TEMP', 'PRES', 'PM2.5', 'NOx', 'PM10', 'C2H3NO5', 'CH4', 'Pb', 'NH3', 'SO2', 'O3', 'CO', 'PAHs', 'H2CO', 'CFCs')]
 head(df)
+```
+
+# Outliers
+```{r}
+df_out <- df[, c('TEMP', 'PRES', 'PM2.5', 'NOx', 'PM10', 'C2H3NO5', 'CH4', 'Pb', 'NH3', 'SO2', 'O3', 'CO', 'PAHs', 'H2CO', 'CFCs')]
+head(df_out)
+outliers_list <- lapply(df_out, function(column) {
+  IQR_value <- IQR(column, na.rm = TRUE)
+  upper_bound <- quantile(column, 0.75, na.rm = TRUE) + 1.5 * IQR_value
+  lower_bound <- quantile(column, 0.25, na.rm = TRUE) - 1.5 * IQR_value
+  lower_outliers <- which(column < lower_bound)
+  upper_outliers <- which(column > upper_bound)
+  return(list(lower_outliers = lower_outliers, upper_outliers = upper_outliers))
+})
+
+
+plot(df_out[[1]], main=paste("Outliers in", names(df_out)[1]), col="blue", pch=19)
+if(length(outliers_list[[1]]$lower_outliers) > 0) {
+  points(outliers_list[[1]]$lower_outliers, df_out[outliers_list[[1]]$lower_outliers, 1], col="red", pch=19)
+}
+if(length(outliers_list[[1]]$upper_outliers) > 0) {
+  points(outliers_list[[1]]$upper_outliers, df_out[outliers_list[[1]]$upper_outliers, 1], col="red", pch=19)
+}
+
 ```
 
 # Pokročilé skúmanie dát
@@ -405,9 +430,9 @@ Výsledný objekt confMatMelted má tri stĺpce:
 - a jeden pre počet pozorovaní pre každú kombináciu skutočných a predpovedaných hodnôt
 ```{r}
 confMatMelted <- melt(confMatMatrix)
-# Actual predstavuje skutočné hodnoty
-# Predicted predstavované hodnoty
-# Value počet prípadov pre každú kombináciu skutočnej a predpovedanej hodnoty
+# Actual - predstavuje skutočné hodnoty
+# Predicted - predikované hodnoty
+# Value - počet prípadov pre každú kombináciu skutočnej a predpovedanej hodnoty
 colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
 ```
 ## Konštatovanie výsledkov

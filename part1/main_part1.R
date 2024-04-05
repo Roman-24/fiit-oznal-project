@@ -13,6 +13,7 @@ library(e1071)
 library(corrplot)
 library(MASS)
 library(reshape2)
+library(gridExtra)
 
 # načítanie datasetu
 labor_measurements <- read.csv('./data/measurements.csv', sep = '\t')
