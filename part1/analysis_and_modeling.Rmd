@@ -304,7 +304,7 @@ sapply(df_nums_only, skewness)
 
 ## Korelačná matica
 ```{r}
-df_nums_only_corr <- cor(df_nums_only, use = "complete.obs")  # 'use' parameter handles missing values
+df_nums_only_corr <- cor(df_nums_only, use = "complete.obs")  # 'use' parameter handluje NA hodnoty
 
 # Vytvorenie masky pre hodnoty, ktoré spĺňajú kritériá
 # vyfiltrovanie korelácií s abs hodnotou podla:
@@ -390,9 +390,9 @@ df$warning <- as.factor(df$warning)
 ## Rozdelenie train a test
 ```{r}
 set.seed(123)
-cat('nrow', nrow(df))
-cat('ncol', ncol(df))
-index <- sample(1:nrow(df), round(0.7 * nrow(df)))
+#cat('nrow', nrow(df))
+#cat('ncol', ncol(df))
+index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
 trainData <- df[index,]
 testData <- df[-index,]
 ```
@@ -400,12 +400,20 @@ testData <- df[-index,]
 ## Natrenovanie modelu
 ```{r}
 logisticModel <- glm(warning ~ ., data = trainData, family = binomial())
+summary(logisticModel)
 ```
 
 ### Predikcia na teste
 ```{r}
+# výpočet predpovedí logistickej regresie na základe predtým natrénovaného modelu
 probabilities <- predict(logisticModel, newdata = testData, type = "response")
+
+# Na základe vrátených pravdepodobností priraďujeme triedy
+# Ak je pravdepodobnosť väčšia ako 0.5, priradí sa hodnota reprezentujúca TRUE warning
+# Ak je menšia alebo rovná 0.5, priradí sa FALSE warning
 predictions <- ifelse(probabilities > 0.5, levels(testData$warning)[2], levels(testData$warning)[1])
+
+# konvertuje predpovedané hodnoty na faktorovú premennú s úrovňami definovanými v originálnej premennej
 predictions <- factor(predictions, levels = levels(testData$warning))
 ```
 ### Evaluacia modelu
