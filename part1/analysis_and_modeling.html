@@ -1021,9 +1021,9 @@ coords(roc_obj, &quot;best&quot;, best.method=&quot;youden&quot;)</code></pre>
 <pre><code>##   threshold specificity sensitivity
 ## 1 0.5518007   0.6137061   0.7859633</code></pre>
 <pre class="r"><code># Vráti napríklad:
-# threshold (cut-off bod)
-# specificity
-# sensitivity</code></pre>
+# threshold (cut-off bod) - je hodnota, ktorá slúži ako hranica na rozhodovanie medzi dvoma možnosťami.
+# specificity -  pravdepodobnosť, že model predpovedá pozitívny výsledok pozorovania, keď je výsledok skutočne pozitívny
+# sensitivity - pravdepodobnosť, že model predpovedá negatívny výsledok pozorovania, keď je výsledok skutočne negatívny</code></pre>
 <pre class="r"><code># Vypočítajme krivku ROC a nájdime optimálny point
 roc_obj &lt;- roc(testData$warning, probabilities)</code></pre>
 <pre><code>## Setting levels: control = 0, case = 1</code></pre>
@@ -1036,10 +1036,10 @@ if (!is.null(optimal$x) &amp;&amp; !is.null(optimal$y)) {
   # Plot ROC curve
   plot(roc_obj, main=&quot;ROC Curve with Optimal Threshold&quot;)
 
-  # Add a point for the optimal threshold
+  # bod pre optimal threshold
   points(optimal$x, optimal$y, pch=19, col=&quot;red&quot;)
 
-  # Add a text label for the optimal threshold
+  # pridaj text label pre optimal threshold
   text(optimal$x, optimal$y, labels=paste(&quot;Threshold:&quot;, round(optimal_threshold, 3)), pos=4)
     segments(optimal$x, optimal$y, optimal$x, 0, col=&quot;red&quot;, lty=2)
 } else {
