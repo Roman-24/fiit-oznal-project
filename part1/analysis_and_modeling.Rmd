@@ -321,9 +321,9 @@ corrplot(filtered_corr_matrix, method = "color", type = "upper", tl.col = "black
 ```
 
 Významnejšie korelácie sa javia byť medzi týmito atribútmi:
-- PM2.5 - PM10
-- PM10 - NH3
-- PM10 - C2H3NO5
+- PM2.5 - PM10 <br>
+- PM10 - NH3 <br>
+- PM10 - C2H3NO5 <br>
 
 # Lineárna regressia
 
@@ -442,10 +442,15 @@ testData <- df[-index,]
 
 ## Natrenovanie modelu
 ```{r}
-logisticModel <- glm(warning ~ ., data = trainData, family = binomial())
+# binomial distribúcii, ktorá je vhodná pre binárnu logistickú regresiu.
+logisticModel <- glm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, family = binomial())
+```
+- Std. Error: Štandardné chyby odhadov koeficientov. Menšie hodnoty ukazujú väčšiu presnosť odhadov koeficientov.
+- P-hodnoty pre testy z. Nízke p-hodnoty (v tomto prípade menšie ako 2e-16) naznačujú, že príslušné koeficienty sú štatisticky významné.
+- V tomto prípade všetky prediktívne premenné majú významný vplyv na premennú
+```{r}
 summary(logisticModel)
 ```
-
 ### Predikcia na teste
 ```{r}
 # výpočet predpovedí logistickej regresie na základe predtým natrénovaného modelu
@@ -490,18 +495,18 @@ colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
 ```{r}
 p <- ggplot(confMatMelted, aes(x = Actual, y = Predicted, fill = Value)) +
   geom_tile(color = "white") +  # Tiles for each combination of actual and predicted
-  geom_text(aes(label = Value), color = "black", size = 5) +  # Add text to each tile
-  scale_fill_gradient(low = "white", high = "steelblue") +  # Gradient color for tiles
-  theme_minimal() +  # Minimal theme
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +  # Adjust x-axis text
+  geom_text(aes(label = Value), color = "black", size = 5) +  # prida text pre kazdu dlaždicu
+  scale_fill_gradient(low = "white", high = "steelblue") +  # farba gradientu
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +  # prida x-axis text
   xlab('Predicted') +  # X-axis label
   ylab('Actual') +  # Y-axis label
-  ggtitle('Confusion Matrix - Logistic Regression')  # Graph title
+  ggtitle('Confusion Matrix - Logistic Regression')  # title
 ```
-- Ľavá horná dlaždica (949) predstavuje pravé negatíva (TN): prípady, keď model správne predpovedal negatívnu triedu.
-- Ľavá spodná dlaždica (1705) predstavuje falošné negatíva (FN): prípady, keď model nesprávne predpovedal negatívnu triedu, hoci v skutočnosti bola pozitívna.
-- Pravá horná dlaždica (3354) predstavuje pravé pozitíva (TP): prípady, keď model správne predpovedal pozitívnu triedu.
-- Pravá spodná časť (1228) predstavuje falošné pozitívne výsledky (FP): prípady, keď model nesprávne predpovedal pozitívnu triedu, hoci v skutočnosti bola negatívna.
+- Ľavá horná dlaždica (604) predstavuje pravé negatíva (TN): prípady, keď model správne predpovedal negatívnu triedu.
+- Ľavá spodná dlaždica (1542) predstavuje falošné negatíva (FN): prípady, keď model nesprávne predpovedal negatívnu triedu, hoci v skutočnosti bola pozitívna.
+- Pravá horná dlaždica (3699) predstavuje pravé pozitíva (TP): prípady, keď model správne predpovedal pozitívnu triedu.
+- Pravá spodná časť (1391) predstavuje falošné pozitívne výsledky (FP): prípady, keď model nesprávne predpovedal pozitívnu triedu, hoci v skutočnosti bola negatívna.
 ```{r}
 print(p)
 ```
