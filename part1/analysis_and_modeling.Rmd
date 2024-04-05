@@ -137,12 +137,11 @@ parse_dates <- function(date_string) {
   for (format in formats) {
     parsed_date <- as.POSIXct(date_string, format = format, tz = "")
     if (!is.na(parsed_date)) {
-      # Return the date in "28 Aug 2016" format
+      # urob datum na format "28 Aug 2016"
       return(format(parsed_date, "%d %b %Y"))
     }
   }
 
-  # Return NA if no formats matched
   return(NA)
 }
 ```
@@ -321,10 +320,16 @@ filtered_corr_matrix[!mask] <- NA
 corrplot(filtered_corr_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45, title = "Filtered Correlation Matrix (|r| >= 0.39)")
 ```
 
-Významnejšie korelácie sa javia byť medzi týmito atribútmi:
+Významnejšie korelácie sa javia byť medzi týmito atribútmi: <br>
 - PM2.5 - PM10 <br>
 - PM10 - NH3 <br>
 - PM10 - C2H3NO5 <br>
+
+# Hypotézy
+## HYPO 1
+Hladiny PM2.5, ktoré sú považované za najškodlivejšie znečistenie, sú lineárne závislé od hladín PM10, SO2 a CO.
+## HYPO 2
+Atribúty PM2.5, PM10, NH3, C2H3NO5 majú štatický významný vplyv na predikciu varovania v podobe premennej warning.
 
 # Lineárna regressia
 
@@ -511,12 +516,13 @@ plot(roc_obj, main="ROC Krivka")
 # Zvyčajne chceme maximalizovať Youdenov index (J), ktorý je definovaný ako sensitivity + specificity - 1
 coords(roc_obj, "best", best.method="youden")
 
-# Vráti napríklad:
-# threshold (cut-off bod) - je hodnota, ktorá slúži ako hranica na rozhodovanie medzi dvoma možnosťami.
-# specificity -  pravdepodobnosť, že model predpovedá pozitívny výsledok pozorovania, keď je výsledok skutočne pozitívny
-# sensitivity - pravdepodobnosť, že model predpovedá negatívny výsledok pozorovania, keď je výsledok skutočne negatívny
 
 ```
+Vráti napríklad:
+- threshold (cut-off bod) - je hodnota, ktorá slúži ako hranica na rozhodovanie medzi dvoma možnosťami <br>
+- specificity -  pravdepodobnosť, že model predpovedá pozitívny výsledok pozorovania, keď je výsledok skutočne pozitívny <br>
+- sensitivity - pravdepodobnosť, že model predpovedá negatívny výsledok pozorovania, keď je výsledok skutočne negatívny
+
 ```{r}
 # Vypočítajme krivku ROC a nájdime optimálny point
 roc_obj <- roc(testData$warning, probabilities)
