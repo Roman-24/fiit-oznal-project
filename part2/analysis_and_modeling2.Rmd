@@ -1,0 +1,535 @@
+---
+title: "OZNAL Zadanie 2"
+author: "Roman Bitarovsky a Roman Osadsky"
+date: "09.04.2024"
+output: html_document
+---
+
+# Predstavenie datasetu
+Náš dataset obsahuje informácie o ovzduší a meracích staniciach ktoré dané merania vykonávali.
+Je zložený z dvoch súborov a to:
+- measurements.csv
+- stations.csv
+## Skratky:
+- PM2.5 - Particulate Matter (µg/m3) <br>
+- PM10 - Particulate Matter (µg/m3) <br>
+- NOx - Nitrogen Oxides (µg/m3) <br>
+- NO2 - Nitrogen Dioxide (µg/m3) <br>
+- SO2 - Sulfur Dioxide  (µg/m3) <br>
+- CO - Carbon Monoxide emissions  (µg/m3) <br>
+- CO2 - Carbon Dioxide  (µg/m3) <br>
+- PAHs - Polycyclic Aromatic Hydrocarbons  (µg/m3) <br>
+- NH3 - Ammonia trace  (µg/m3) <br>
+- Pb - Lead  (µg/m3) <br>
+- TEMP - Temperature (degree Celsius) <br>
+- DEWP - Dew point temperature (degree Celsius) <br>
+- PRES - Pressure (hPa, <100, 1050>) <br>
+- RAIN - Rain (mm) <br>
+- WSPM - Wind Speed (m/s) <br>
+- WD - Wind Direction <br>
+- VOC - Volatile Organic Compounds <br>
+- CFCs - Chlorofluorocarbons <br>
+- C2H3NO5 - Peroxyacetyl nitrate <br>
+- H2CO - Plywood emit formaldehyde <br>
+- GSTM1 - Glutathione-S transferase M1 <br>
+- 1-OHP - 1-hydroxypyrene <br>
+- 2-OHF - 2-hydroxyfluorene <br>
+- 2-OHNa - 2-hydroxynaphthalene <br>
+- N2 - Nitrogen <br>
+- O2 - Oxygen <br>
+- O3 - Ozone <br>
+- Ar - Argon <br>
+- Ne - Neon <br>
+- CH4 - Methane <br>
+- He - Helium <br>
+- Kr - Krypton <br>
+- I2 - Iodine <br>
+- H2 - Hydrogen <br>
+- Xe - Xenon <br>
+
+# Initializácia a načítanie dát
+```{r}
+getwd()
+#setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
+setwd('/Users/roman/Desktop/development/oznal_project1/')
+#setwd(getwd())
+```
+Importovanie knižníc
+```{r}
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(tidyverse)
+library(caret)
+library(tidyr)
+library(e1071)
+library(corrplot)
+library(MASS)
+library(reshape2)
+library(gridExtra)
+library(pROC)
+library(e1071)
+
+```
+Načítanie dát
+```{r}
+labor_measurements <- read.csv('/Users/roman/Desktop/development/oznal_project1/data/measurements.csv', sep = '\t')
+labor_stations <- read.csv('/Users/roman/Desktop/development/oznal_project1/data/stations.csv', sep = '\t')
+```
+
+
+# Základné preskúmanie dát
+Zobrazenie prvých riadkov datasetov, ich rozmerov a typov atribútov
+
+## Merenia
+```{r}
+head(labor_measurements)
+```
+Počet riadkov: labor_measurements
+```{r}
+nrow(labor_measurements)
+```
+Počet stĺpcov: labor_measurements
+```{r}
+ncol(labor_measurements)
+```
+### Atribúty labor_measurements
+```{r}
+str(labor_measurements)
+```
+
+## Stanice
+```{r}
+head(labor_stations)
+```
+Počet riadkov: labor_stations
+```{r}
+nrow(labor_stations)
+```
+Počet stĺpcov: labor_stations
+```{r}
+ncol(labor_stations)
+```
+### Atribúty labor_stations
+```{r}
+str(labor_stations)
+```
+
+
+# Čistenie dát
+Ked sa pozrieme na labor_stations tam už to tak nieje preto si skontrolujeme formáty
+
+## Zjednotenie atribútov
+```{r}
+# Kontrola jedinečných hodnôt a ich počtu
+qos_count <- table(labor_stations$QoS)
+#qos_count
+# Nahradenie špecifických hodnôt
+labor_stations$QoS[labor_stations$QoS == "acceptable"] <- "accep"
+labor_stations$QoS[labor_stations$QoS == "maitennce"] <- "maintenance"
+# Opätovná kontrola jedinečných hodnôt a ich počtov po nahradení
+qos_count <- table(labor_stations$QoS)
+#qos_count
+```
+helper
+```{r}
+parse_dates <- function(date_string) {
+  formats <- c("%Y/%m/%d", "%d %b %Y", "%Y-%m-%d", "%m/%d/%Y, %H:%M:%S", "%d/%m/%Y, %H:%M:%S")
+
+  for (format in formats) {
+    parsed_date <- as.POSIXct(date_string, format = format, tz = "")
+    if (!is.na(parsed_date)) {
+      # urob datum na format "28 Aug 2016"
+      return(format(parsed_date, "%d %b %Y"))
+    }
+  }
+
+  return(NA)
+}
+```
+```{r}
+# Kontrola jedinečných hodnôt a ich počtu
+revision_count <- table(labor_stations$revision)
+#revision_count
+# Nahradenie špecifických hodnôt
+labor_stations$revision <- sapply(labor_stations$revision, parse_dates)
+cat('Identifikované rozdielne formáty dátumu sme zjednotili na formát dd mmm yyyy')
+# Opätovná kontrola jedinečných hodnôt a ich počtov po nahradení
+revision_count <- table(labor_stations$revision)
+#revision_count
+```
+
+## Nahradenie chýbajúcich hodnôt
+
+```{r}
+# Nahradenie prázdnych reťazcov reťazcami NA
+labor_measurements[labor_measurements == ""] <- NA
+labor_stations[labor_stations == ""] <- NA
+```
+Náhľad nato koľko dát chýba
+```{r}
+missing_data_percentage <- sum(is.na(labor_measurements)) / nrow(labor_measurements) * 100
+cat(sprintf("Chýbajúce dáta v labor_measurements tvoria %.5f%% dát", missing_data_percentage))
+cat("\n")
+missing_data_percentage_stations <- sum(is.na(labor_stations)) / nrow(labor_stations) * 100
+cat(sprintf("Chýbajúce dáta v labor_stations tvoria %.5f%% dát", missing_data_percentage_stations))
+cat("\n")
+```
+Spočítanie a vypísanie riadkov s hodnotami NA pre labor_measurements
+```{r}
+na_count_measurements <- sum(!complete.cases(labor_measurements))
+cat('NaN hodnoty pre labor_measurements:', na_count_measurements, '\n')
+```
+Spočítanie a vypísanie riadkov s hodnotami NA pre labor_stations
+```{r}
+na_count_stations <- sum(!complete.cases(labor_stations))
+cat('NaN hodnoty pre labor_stations:', na_count_stations, '\n')
+```
+Prázdne hodnoty sme sa rozhodli dropnúť
+```{r}
+labor_measurements <- na.omit(labor_measurements)
+labor_stations <- na.omit(labor_stations)
+```
+
+## Kontrola duplicitných záznamov
+```{r}
+if (any(duplicated(labor_measurements))) {
+  duplicates_count <- sum(duplicated(labor_measurements))
+  cat('labor_measurements pocet duplikatov', duplicates_count, '\n')
+} else {
+  cat('labor_measurements no duplicates\n')
+}
+if (any(duplicated(labor_stations))) {
+  duplicates_count_stations <- sum(duplicated(labor_stations))
+  cat('labor_stations pocet duplikatov', duplicates_count_stations, '\n')
+} else {
+  cat('labor_stations no duplicates\n')
+}
+```
+Dropnutie duplicitných záznamov
+```{r}
+labor_measurements <- unique(labor_measurements)
+labor_stations <- unique(labor_stations)
+```
+
+# Mergnutie súborov do jedného df
+```{r}
+# Odstránenie nepotrebných stĺpcov
+labor_stations <- labor_stations[, -4]
+#head(labor_stations)
+# Merge
+df <- merge(labor_measurements, labor_stations, by = c("latitude", "longitude"), all = FALSE)
+# Odstránenie stĺpcov 'latitude' a 'longitude' lebo ich už viac nepotrebujeme
+df <- df[, !names(df) %in% c('latitude', 'longitude')]
+# reorganizacia stlpcov
+df <- df[, c('location', 'warning', 'QoS', 'revision', 'TEMP', 'PRES', 'PM2.5', 'NOx', 'PM10', 'C2H3NO5', 'CH4', 'Pb', 'NH3', 'SO2', 'O3', 'CO', 'PAHs', 'H2CO', 'CFCs')]
+head(df)
+```
+
+# Outliers
+```{r}
+df_out <- df[, c('TEMP', 'PRES', 'PM2.5', 'NOx', 'PM10', 'C2H3NO5', 'CH4', 'Pb', 'NH3', 'SO2', 'O3', 'CO', 'PAHs', 'H2CO', 'CFCs')]
+head(df_out)
+outliers_list <- lapply(df_out, function(column) {
+  IQR_value <- IQR(column, na.rm = TRUE)
+  upper_bound <- quantile(column, 0.75, na.rm = TRUE) + 1.5 * IQR_value
+  lower_bound <- quantile(column, 0.25, na.rm = TRUE) - 1.5 * IQR_value
+  lower_outliers <- which(column < lower_bound)
+  upper_outliers <- which(column > upper_bound)
+  return(list(lower_outliers = lower_outliers, upper_outliers = upper_outliers))
+})
+
+
+plot(df_out[[1]], main=paste("Outliers in", names(df_out)[1]), col="blue", pch=19)
+if(length(outliers_list[[1]]$lower_outliers) > 0) {
+  points(outliers_list[[1]]$lower_outliers, df_out[outliers_list[[1]]$lower_outliers, 1], col="red", pch=19)
+}
+if(length(outliers_list[[1]]$upper_outliers) > 0) {
+  points(outliers_list[[1]]$upper_outliers, df_out[outliers_list[[1]]$upper_outliers, 1], col="red", pch=19)
+}
+
+```
+
+# Pokročilé skúmanie dát
+
+## Lineárna regressia
+
+```{r}
+numeric_df <- df[sapply(df, is.numeric)]
+ggpairs(numeric_df,
+        lower = list(continuous = "smooth"),
+        diag = list(continuous = "barDiag"))
+```
+
+### Rozdelíme dáta na trénovacie a testovacie a vytvoríme Model
+
+```{r}
+set.seed(123)
+sample <- sample(c(TRUE, FALSE), nrow(df), replace = TRUE, prob = c(0.5, 0.3))
+train_data <- df[sample,]
+test_data <- df[!sample,]
+
+# PM2.5 – the most harmful pollution
+# PM10 - Particulate Matter (µg/m3)
+# SO2 - Sulfur Dioxide  (µg/m3)
+# CO - Carbon Monoxide emissions  (µg/m3)
+PM25Model <- lm(PM2.5 ~ PM10  + SO2 + CO, data = train_data)
+summary(PM25Model)
+```
+#### Vyhodnotenie na základe summary
+
+- Odhadovaná štandardná chyba reziduál je 1.588, čo naznačuje rozptyl reziduálnych hodnôt okolo regresnej čiary.
+- F-statisticsje 2405 na 3 a 15103 DF, s p-hodnotou menšou ako 2.2e-16, čo naznačuje, že model ako celok je štatisticky významný. (Čím vačší F-statistics tým lepšie)
+- Std. Error je na nízkých hodnotách, tak môžeme povedať že chybovosť modelu má menšiu pravdepodobnost
+- r-squared by malo isť viac k 1 aby to bolo presnejšie
+- p-value je < 0.05  model je štatisticky signifikantný
+- t-value je celkom na vysokých hodnotách čo môže naznačovať koeficient regresie nieje štatisticky významný
+
+
+### Vy-plotujeme si model
+
+```{r}
+
+par(mar = c(1, 1, 1, 1))
+plot(PM25Model)
+```
+
+### Vyhodnotenie plotov
+
+Residuals vs Fitted
+- Červená čiara by mala horizontálna najviac ako je možná
+- Ak je čiara nakrivená može to znamenať nelineárny vzťah
+- Detekuje odlahlé body
+
+Normal QQ
+- Kontrolujeme či residuals majú normálovu distribúciu
+- Ak sú rezíduá normálne distribuované, body na grafe by mali vytvoriť približne priamu čiaru
+- Ak sú body na Q-Q grafe zakrivené alebo majú iné neštandardné vzory, môže to naznačovať, že rezíduá majú neobvyklé rozdelenie
+- V našom prípade to vyzerá že residualy majú normálovú distribúciu
+
+Scale-Location (Spread location)
+- Čiara je takmer horizontálna takže mohli by sme povedať že residuals sú rovnomerne rozložené
+
+Residuals vs Leverage:
+- zobrazuje ovplivnujúce časti
+- niečo podobné ako outliery
+- ak by sme videli v rohoch čiary tak je možné že to nieje v poriadku
+
+
+## Predikovanie na základe testovacích dáta + manuálne overenie
+
+```{r}
+
+
+predicted_values <- predict(PM25Model, newdata = test_data)
+
+# PM25 = 12.88 - 0.11 * PM10 - 0.23 * SO2 + 0.10 * CO
+cat("Expected: 5.72081 , Predicted: ",predict(PM25Model,data.frame(PM10=5.85838,  SO2=11.00024, CO=7.00959)))
+```
+
+
+```{r}
+
+mean_absolute_error <- mean(abs(predicted_values - test_data$PM2.5))
+mean_squared_error <- mean((predicted_values - test_data$PM2.5)^2)
+root_mean_squared_error <- sqrt(mean_squared_error)
+
+data.frame(Metric = c("Mean Absolute Error", "Mean Squared Error", "Root Mean Squared Error"), Value = c(mean_absolute_error,mean_squared_error,root_mean_squared_error))
+
+```
+
+### Vyhodnotenie na základe metrík
+MAE - meria absolutnu chybu medzi predikovanými hodnotami a skutočnímy
+
+MSE - meria priemernu velkost chyb p redikciach modelu, a tak kvantifikuje rozdiel medzi skutočnými a predikovanými hodnotami
+
+RMSE -> poskytuje prehlad o tom ako dobre model predikuje alebo ako blízko sú predikcie k skutočním hodnotám
+
+
+### Vizualizácia predikovaných dát
+
+```{r}
+plot(x=predicted_values, y=test_data$PM2.5,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+
+head(data.frame(actual=test_data$PM2.5, predicted=predicted_values))
+
+```
+
+## Klasifikácia
+
+Warning je kategorický atribút, preto ho musíme pretypovať na faktor
+```{r}
+df$warning <- as.factor(df$warning)
+```
+### Rozdelenie train a test
+```{r}
+set.seed(123)
+#cat('nrow', nrow(df))
+#cat('ncol', ncol(df))
+index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
+trainData <- df[index,]
+testData <- df[-index,]
+```
+
+### Natrenovanie modelu
+```{r}
+# binomial distribúcii, ktorá je vhodná pre binárnu logistickú regresiu.
+logisticModel <- glm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, family = binomial())
+```
+- Std. Error: Štandardné chyby odhadov koeficientov. Menšie hodnoty ukazujú väčšiu presnosť odhadov koeficientov.
+- P-hodnoty pre testy z. Nízke p-hodnoty (v tomto prípade menšie ako 2e-16) naznačujú, že príslušné koeficienty sú štatisticky významné.
+- V tomto prípade všetky prediktívne premenné majú významný vplyv na premennú
+```{r}
+summary(logisticModel)
+```
+#### Predikcia na teste
+```{r}
+# výpočet predpovedí logistickej regresie na základe predtým natrénovaného modelu
+probabilities <- predict(logisticModel, newdata = testData, type = "response")
+
+# Na základe vrátených pravdepodobností priraďujeme triedy
+# Ak je pravdepodobnosť väčšia ako 0.5, priradí sa hodnota reprezentujúca TRUE warning
+# Ak je menšia alebo rovná 0.5, priradí sa FALSE warning
+predictions <- ifelse(probabilities > 0.5, levels(testData$warning)[2], levels(testData$warning)[1])
+
+# konvertuje predpovedané hodnoty na faktorovú premennú s úrovňami definovanými v originálnej premennej
+predictions <- factor(predictions, levels = levels(testData$warning))
+```
+#### Evaluacia modelu
+```{r}
+confMatrix <- table(Predicted = predictions, Actual = testData$warning)
+print(confMatrix)
+```
+
+confusionMatrix je tabuľka, ktorá ukazuje počty správnych a nesprávnych predikcií modelu v porovnaní s aktuálnymi hodnotami.
+V tomto prípade sú predictions predpovedané hodnoty z modelu, a testData$warning sú skutočné hodnoty cieľovej premennej.
+Objekt confMat potom obsahuje túto metriku spolu s ďalšími štatistikami výkonu modelu.
+```{r}
+confMat <- confusionMatrix(predictions, testData$warning)
+confMatMatrix <- as.matrix(confMat$table)
+```
+
+Melt mení confMatMatrix do dlhého formátu.
+Dlhý formát je užitočný pre vizualizáciu, pretože každý riadok reprezentuje jednu hodnotu s príslušnými identifikátormi.
+Výsledný objekt confMatMelted má tri stĺpce:
+- jeden pre skutočné hodnoty
+- jeden pre predpovedané hodnoty
+- a jeden pre počet pozorovaní pre každú kombináciu skutočných a predpovedaných hodnôt
+```{r}
+confMatMelted <- melt(confMatMatrix)
+# Actual - predstavuje skutočné hodnoty
+# Predicted - predikované hodnoty
+# Value - počet prípadov pre každú kombináciu skutočnej a predpovedanej hodnoty
+colnames(confMatMelted) <- c('Actual', 'Predicted', 'Value')
+```
+### Konštatovanie výsledkov
+```{r}
+# Vytvorenie ROC objektu
+roc_obj <- roc(testData$warning, probabilities)
+
+# Výpis ROC krivky
+plot(roc_obj, main="ROC Krivka")
+
+# Hľadanie optimálneho cut-off bodu
+# Zvyčajne chceme maximalizovať Youdenov index (J), ktorý je definovaný ako sensitivity + specificity - 1
+coords(roc_obj, "best", best.method="youden")
+
+
+```
+Vráti napríklad:
+- threshold (cut-off bod) - je hodnota, ktorá slúži ako hranica na rozhodovanie medzi dvoma možnosťami <br>
+- specificity -  pravdepodobnosť, že model predpovedá pozitívny výsledok pozorovania, keď je výsledok skutočne pozitívny <br>
+- sensitivity - pravdepodobnosť, že model predpovedá negatívny výsledok pozorovania, keď je výsledok skutočne negatívny
+
+```{r}
+# Vypočítajme krivku ROC a nájdime optimálny point
+roc_obj <- roc(testData$warning, probabilities)
+optimal <- coords(roc_obj, "best", best.method="youden")
+optimal_threshold <- optimal$threshold
+
+# Kontrola platnosti optimálnych súradníc
+if (!is.null(optimal$x) && !is.null(optimal$y)) {
+  # Plot ROC curve
+  plot(roc_obj, main="ROC Curve with Optimal Threshold")
+
+  # bod pre optimal threshold
+  points(optimal$x, optimal$y, pch=19, col="red")
+
+  # pridaj text label pre optimal threshold
+  text(optimal$x, optimal$y, labels=paste("Threshold:", round(optimal_threshold, 3)), pos=4)
+    segments(optimal$x, optimal$y, optimal$x, 0, col="red", lty=2)
+} else {
+  cat("Optimal coordinates are not available.\n")
+}
+
+```
+```{r}
+p <- ggplot(confMatMelted, aes(x = Actual, y = Predicted, fill = Value)) +
+  geom_tile(color = "white") +  # Tiles for each combination of actual and predicted
+  geom_text(aes(label = Value), color = "black", size = 5) +  # prida text pre kazdu dlaždicu
+  scale_fill_gradient(low = "white", high = "steelblue") +  # farba gradientu
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1)) +  # prida x-axis text
+  xlab('Predicted') +  # X-axis label
+  ylab('Actual') +  # Y-axis label
+  ggtitle('Confusion Matrix - Logistic Regression')  # title
+```
+- Ľavá horná dlaždica (604) predstavuje pravé negatíva (TN): prípady, keď model správne predpovedal negatívnu triedu.
+- Ľavá spodná dlaždica (1542) predstavuje falošné negatíva (FN): prípady, keď model nesprávne predpovedal negatívnu triedu, hoci v skutočnosti bola pozitívna.
+- Pravá horná dlaždica (3699) predstavuje pravé pozitíva (TP): prípady, keď model správne predpovedal pozitívnu triedu.
+- Pravá spodná časť (1391) predstavuje falošné pozitívne výsledky (FP): prípady, keď model nesprávne predpovedal pozitívnu triedu, hoci v skutočnosti bola negatívna.
+```{r}
+print(p)
+```
+
+# Pokročilé skúmanie dát 2
+
+## Lineárna regressia
+
+## Klasifikácia
+
+### LDA
+
+```{r}
+
+# rozdelenie data setu na test a train
+# nieje potrebne lebo je urobene hore
+index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
+trainData <- df[index,]
+testData <- df[-index,]
+
+# Trénovanie modelu Linear Discriminant Analysis (LDA)
+ldaModel <- lda(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData)
+
+# Predpovedanie na testovacom súbore údajov
+predictions <- predict(ldaModel, newdata = testData)$class
+
+# evaluacia modelu
+table(Predicted = predictions, Actual = testData$warning)
+```
+
+### SVM
+```{r}
+# Training the SVM model
+svmModel <- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = "radial", cost = 1, scale = TRUE)
+
+# Summary of the SVM model
+summary(svmModel)
+
+# Making predictions
+svmPredictions <- predict(svmModel, newdata = testData)
+
+# Converting predictions to factor with levels as in the test data
+svmPredictions <- factor(svmPredictions, levels = levels(testData$warning))
+
+# Confusion Matrix for the SVM model
+svmConfMatrix <- table(Predicted = svmPredictions, Actual = testData$warning)
+print(svmConfMatrix)
+
+# Advanced evaluation with caret package (install if necessary)
+confusionMatrix(svmPredictions, testData$warning)
+
+```
