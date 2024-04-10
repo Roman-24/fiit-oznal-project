@@ -534,3 +534,63 @@ print(svmConfMatrix)
 confusionMatrix(svmPredictions, testData$warning)
 
 ```
+ ## Porovnanie modelov klasifikácie
+```{r}
+set.seed(123)
+index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
+trainData <- df[index,]
+testData <- df[-index,]
+
+# Ensure testData$warning is a factor with specific levels
+testData$warning <- factor(testData$warning, levels = levels(testData$warning))
+
+# Predict on test data
+pred1 <- predict(logisticModel, testData)
+pred2 <- predict(ldaModel, testData)
+pred3 <- predict(svmModel, testData)
+
+# Convert predictions to factor and ensure they have the same levels as testData$warning
+pred1 <- factor(pred1, levels = levels(testData$warning))
+pred2 <- factor(pred2, levels = levels(testData$warning))
+pred3 <- factor(pred3, levels = levels(testData$warning))
+
+# Now compute the confusion matrices
+cm1 <- confusionMatrix(pred1, testData$warning)
+cm2 <- confusionMatrix(pred2, testData$warning)
+cm3 <- confusionMatrix(pred3, testData$warning)
+
+
+# Confusion Matrix for each model
+cm1 <- confusionMatrix(pred1, testData$warning)
+cm2 <- confusionMatrix(pred2, testData$warning)
+cm3 <- confusionMatrix(pred3, testData$warning)
+
+# You can print out these matrices or specific metrics like this:
+print(cm1$overall['Accuracy'])
+print(cm2$overall['Accuracy'])
+print(cm3$overall['Accuracy'])
+
+# ROC Curve and AUC
+# Depending on your model, you might need to use different functions to get probabilities
+prob1 <- predict(logisticModel, testData, type = "prob")[,2]
+prob2 <- predict(ldaModel, testData, type = "prob")[,2]
+prob3 <- predict(svmModel, testData, type = "prob")[,2]
+
+roc1 <- roc(response = testData$warning, predictor = prob1)
+roc2 <- roc(response = testData$warning, predictor = prob2)
+roc3 <- roc(response = testData$warning, predictor = prob3)
+
+# Plot ROC Curves
+plot(roc1, col = "red")
+lines(roc2, col = "blue")
+lines(roc3, col = "green")
+legend("bottomright", legend = c("Model 1", "Model 2", "Model 3"), col = c("red", "blue", "green"), lwd = 2)
+
+# Print AUC values
+cat("AUC for Model 1:", auc(roc1), "\n")
+cat("AUC for Model 2:", auc(roc2), "\n")
+cat("AUC for Model 3:", auc(roc3), "\n")
+
+# For a more detailed comparison, you can consider other metrics and visualization techniques.
+
+```
