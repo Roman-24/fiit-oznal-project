@@ -1012,6 +1012,7 @@ skutočnosti bola negatívna.</li>
 <h3>LDA</h3>
 <pre class="r"><code># rozdelenie data setu na test a train
 # nieje potrebne lebo je urobene hore
+set.seed(123)
 index &lt;- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
 trainData &lt;- df[index,]
 testData &lt;- df[-index,]
@@ -1026,15 +1027,18 @@ predictions &lt;- predict(ldaModel, newdata = testData)$class
 table(Predicted = predictions, Actual = testData$warning)</code></pre>
 <pre><code>##          Actual
 ## Predicted    0    1
-##         0 1509  615
-##         1 1386 3726</code></pre>
+##         0 1476  579
+##         1 1457 3724</code></pre>
 </div>
 <div id="svm" class="section level3">
 <h3>SVM</h3>
-<pre class="r"><code># Training the SVM model
-svmModel &lt;- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = &quot;radial&quot;, cost = 1, scale = TRUE)
+<pre class="r"><code>set.seed(123)
+index &lt;- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
+trainData &lt;- df[index,]
+testData &lt;- df[-index,]
 
-# Summary of the SVM model
+# trenovanie SVM modelu
+svmModel &lt;- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = &quot;radial&quot;, cost = 1, scale = TRUE)
 summary(svmModel)</code></pre>
 <pre><code>## 
 ## Call:
@@ -1047,56 +1051,54 @@ summary(svmModel)</code></pre>
 ##  SVM-Kernel:  radial 
 ##        cost:  1 
 ## 
-## Number of Support Vectors:  6746
+## Number of Support Vectors:  6669
 ## 
-##  ( 3397 3349 )
+##  ( 3346 3323 )
 ## 
 ## 
 ## Number of Classes:  2 
 ## 
 ## Levels: 
 ##  0 1</code></pre>
-<pre class="r"><code># Making predictions
+<pre class="r"><code># generovanie predpovedí
 svmPredictions &lt;- predict(svmModel, newdata = testData)
-
-# Converting predictions to factor with levels as in the test data
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
 svmPredictions &lt;- factor(svmPredictions, levels = levels(testData$warning))
-
-# Confusion Matrix for the SVM model
+# Confusion Matrix pre SVM model
 svmConfMatrix &lt;- table(Predicted = svmPredictions, Actual = testData$warning)
 print(svmConfMatrix)</code></pre>
 <pre><code>##          Actual
 ## Predicted    0    1
-##         0 2152  415
-##         1  743 3926</code></pre>
-<pre class="r"><code># Advanced evaluation with caret package (install if necessary)
+##         0 2130  400
+##         1  803 3903</code></pre>
+<pre class="r"><code># pokročilé vyhodnotie
 confusionMatrix(svmPredictions, testData$warning)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    0    1
-##          0 2152  415
-##          1  743 3926
-##                                           
-##                Accuracy : 0.84            
-##                  95% CI : (0.8313, 0.8483)
-##     No Information Rate : 0.5999          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.6602          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-##                                           
-##             Sensitivity : 0.7434          
-##             Specificity : 0.9044          
-##          Pos Pred Value : 0.8383          
-##          Neg Pred Value : 0.8409          
-##              Prevalence : 0.4001          
-##          Detection Rate : 0.2974          
-##    Detection Prevalence : 0.3548          
-##       Balanced Accuracy : 0.8239          
-##                                           
-##        &#39;Positive&#39; Class : 0               
+##          0 2130  400
+##          1  803 3903
+##                                          
+##                Accuracy : 0.8337         
+##                  95% CI : (0.825, 0.8423)
+##     No Information Rate : 0.5947         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.6474         
+##                                          
+##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16      
+##                                          
+##             Sensitivity : 0.7262         
+##             Specificity : 0.9070         
+##          Pos Pred Value : 0.8419         
+##          Neg Pred Value : 0.8294         
+##              Prevalence : 0.4053         
+##          Detection Rate : 0.2944         
+##    Detection Prevalence : 0.3496         
+##       Balanced Accuracy : 0.8166         
+##                                          
+##        &#39;Positive&#39; Class : 0              
 ## </code></pre>
 </div>
 </div>

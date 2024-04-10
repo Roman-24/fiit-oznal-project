@@ -497,6 +497,7 @@ print(p)
 
 # rozdelenie data setu na test a train
 # nieje potrebne lebo je urobene hore
+set.seed(123)
 index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
 trainData <- df[index,]
 testData <- df[-index,]
@@ -513,23 +514,23 @@ table(Predicted = predictions, Actual = testData$warning)
 
 ### SVM
 ```{r}
-# Training the SVM model
+
+set.seed(123)
+index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
+trainData <- df[index,]
+testData <- df[-index,]
+
+# trenovanie SVM modelu
 svmModel <- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = "radial", cost = 1, scale = TRUE)
-
-# Summary of the SVM model
 summary(svmModel)
-
-# Making predictions
+# generovanie predpovedí
 svmPredictions <- predict(svmModel, newdata = testData)
-
-# Converting predictions to factor with levels as in the test data
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
 svmPredictions <- factor(svmPredictions, levels = levels(testData$warning))
-
-# Confusion Matrix for the SVM model
+# Confusion Matrix pre SVM model
 svmConfMatrix <- table(Predicted = svmPredictions, Actual = testData$warning)
 print(svmConfMatrix)
-
-# Advanced evaluation with caret package (install if necessary)
+# pokročilé vyhodnotie
 confusionMatrix(svmPredictions, testData$warning)
 
 ```
