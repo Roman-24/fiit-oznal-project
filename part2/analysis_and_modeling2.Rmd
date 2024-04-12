@@ -513,6 +513,21 @@ table(Predicted = predictions, Actual = testData$warning)
 ```
 
 ### SVM
+SVM sú typom algoritmu učenia pod dohľadom, ktorý sa používa na klasifikačné aj regresné úlohy.
+Sú obzvlášť výkonné pre vysokorozmerné údaje.
+Cieľom SVM je nájsť najlepšiu oddeľujúcu hyperplochu, ktorá rozdeľuje rôzne triedy v priestore príznakov.
+Vektory, ktoré definujú hyperplochu, sa nazývajú podporné vektory.
+
+Kernel je metóda používaná v SVM, ktorá umožňuje učenie vo vysokodimenzionálnych priestoroch príznakov bez explicitnej transformácie údajov do týchto dimenzií.
+Je to užitočné najmä vtedy, keď hranica medzi triedami nie je lineárna.
+Použitím funkcie jadra môže SVM vykonávať zložité klasifikácie pomocou lineárneho klasifikátora implicitným mapovaním vstupných údajov do vysokodimenzionálnych priestorov príznakov.
+
+## Radial Basis Function (RBF) Kernel
+Kernel RBF je jednou z najbežnejších funkcií používaných v SVM. Označuje sa aj ako Gaussov kernel.
+Výhody použitia jadra RBF v SVM
+- RBF jadro je veľmi flexibilné a dokáže riešiť prípady, keď je vzťah medzi značkami tried a atribútmi nelineárny.
+- Funguje dobre vo vysokodimenzionálnych priestoroch, aj keď je počet dimenzií väčší ako počet vzoriek.
+- Je účinný v scenároch, kde dátové body nie sú lineárne oddeliteľné.
 ```{r}
 
 set.seed(123)
