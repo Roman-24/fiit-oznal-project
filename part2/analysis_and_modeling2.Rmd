@@ -50,8 +50,8 @@ Je zložený z dvoch súborov a to:
 # Initializácia a načítanie dát
 ```{r}
 getwd()
-#setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
-setwd('/Users/roman/Desktop/development/oznal_project1/')
+setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
+#setwd('/Users/roman/Desktop/development/oznal_project1/')
 #setwd(getwd())
 ```
 Importovanie knižníc
@@ -488,6 +488,45 @@ print(p)
 # Pokročilé skúmanie dát 2
 
 ## Lineárna regressia
+
+
+```{r}
+## Lasso regresion
+
+
+# Nastavenie cieľovej hodnoty na PM2.5
+y_data <- df$PM2.5
+
+# Nastavenie nezávislých premenných na PM10, SO2 a CO a vytvorenie matice dát
+x_data <- data.matrix(df[, c('PM10', 'SO2', 'CO')])
+
+library(glmnet)
+
+# Vytvorenie modelu
+# cv = Cros validation pre nájdenie optimálnej hodnoty pre Lambdu
+# gausiann -> dávame vedieť že robíme lineárnu regresiu
+cv_model <- cv.glmnet(x_data, y_data, alpha = 0, family = "gaussian")
+
+# Určenie optimálnej hodnoty lambda z krížovej validácie
+best_lambda <- cv_model$lambda.min
+
+# Vykreslenie grafu krížovej validácie
+plot(cv_model)
+
+# Získanie koeficientov najlepšieho modelu
+best_model <- glmnet(x_data, y_data, alpha = 1, lambda = best_lambda)
+coef(best_model)
+
+# Predikcia hodnôt pomocou najlepšieho modelu
+y_predicted <- predict(best_model, s = best_lambda, newx = x_data)
+
+
+sst <- sum((y_data - mean(y_data))^2)
+sse <- sum((y_predicted - y_data)^2)
+rsq <- 1 - sse/sst
+rsq
+
+```
 
 ## Klasifikácia
 
