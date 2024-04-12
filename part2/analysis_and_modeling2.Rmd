@@ -541,37 +541,37 @@ index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
 trainData <- df[index,]
 testData <- df[-index,]
 
-# Ensure testData$warning is a factor with specific levels
+# Treba poriesit ze testData$warning je faktor so specifickymi levelmi
 testData$warning <- factor(testData$warning, levels = levels(testData$warning))
 
-# Predict on test data
+# Predikovanie na test data
 pred1 <- predict(logisticModel, testData)
 pred2 <- predict(ldaModel, testData)
 pred3 <- predict(svmModel, testData)
 
-# Convert predictions to factor and ensure they have the same levels as testData$warning
+# Prehodnotenie faktorov predpovedí
 pred1 <- factor(pred1, levels = levels(testData$warning))
 pred2 <- factor(pred2, levels = levels(testData$warning))
 pred3 <- factor(pred3, levels = levels(testData$warning))
 
-# Now compute the confusion matrices
+# vytvorenie confusion matíc
 cm1 <- confusionMatrix(pred1, testData$warning)
 cm2 <- confusionMatrix(pred2, testData$warning)
 cm3 <- confusionMatrix(pred3, testData$warning)
 
 
-# Confusion Matrix for each model
+# Confusion Matrix pre kazdy model
 cm1 <- confusionMatrix(pred1, testData$warning)
 cm2 <- confusionMatrix(pred2, testData$warning)
 cm3 <- confusionMatrix(pred3, testData$warning)
 
-# You can print out these matrices or specific metrics like this:
+# Vypis presnosti modelov
 print(cm1$overall['Accuracy'])
 print(cm2$overall['Accuracy'])
 print(cm3$overall['Accuracy'])
 
-# ROC Curve and AUC
-# Depending on your model, you might need to use different functions to get probabilities
+# ROC Curve a AUC
+# V závislosti od modelu možno treba použiť rôzne funkcie na získanie pravdepodobností
 prob1 <- predict(logisticModel, testData, type = "prob")[,2]
 prob2 <- predict(ldaModel, testData, type = "prob")[,2]
 prob3 <- predict(svmModel, testData, type = "prob")[,2]
@@ -580,17 +580,14 @@ roc1 <- roc(response = testData$warning, predictor = prob1)
 roc2 <- roc(response = testData$warning, predictor = prob2)
 roc3 <- roc(response = testData$warning, predictor = prob3)
 
-# Plot ROC Curves
+# Vyplotovanie ROC Curves
 plot(roc1, col = "red")
 lines(roc2, col = "blue")
 lines(roc3, col = "green")
 legend("bottomright", legend = c("Model 1", "Model 2", "Model 3"), col = c("red", "blue", "green"), lwd = 2)
 
-# Print AUC values
+# vypis AUC values
 cat("AUC for Model 1:", auc(roc1), "\n")
 cat("AUC for Model 2:", auc(roc2), "\n")
 cat("AUC for Model 3:", auc(roc3), "\n")
-
-# For a more detailed comparison, you can consider other metrics and visualization techniques.
-
 ```
