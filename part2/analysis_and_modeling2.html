@@ -451,8 +451,7 @@ library(corrplot)</code></pre>
 ## The following objects are masked from &#39;package:stats&#39;:
 ## 
 ##     cov, smooth, var</code></pre>
-<pre class="r"><code>library(e1071)
-library(glmnet)</code></pre>
+<pre class="r"><code>library(glmnet)</code></pre>
 <pre><code>## Loading required package: Matrix
 ## 
 ## Attaching package: &#39;Matrix&#39;
@@ -1190,7 +1189,22 @@ jadro je veľmi flexibilné a dokáže riešiť prípady, keď je vzťah medzi
 značkami tried a atribútmi nelineárny. - Funguje dobre vo
 vysokodimenzionálnych priestoroch, aj keď je počet dimenzií väčší ako
 počet vzoriek. - Je účinný v scenároch, kde dátové body nie sú lineárne
-oddeliteľné.</p>
+oddeliteľné. #### Others kernel options available in e1071: - Linear
+Kernel: This kernel is the simplest, where the prediction is based on
+the linear combination of the features. It’s used when the data is
+linearly separable. You can specify it with kernel = “linear”. -
+Polynomial Kernel: This kernel allows for curved boundaries in the
+feature space. It’s defined by the degree of the polynomial. Higher
+degrees can fit more complex structures but also risk overfitting. It
+can be specified using kernel = “polynomial”, and you can also set the
+degree with the degree parameter. - Radial Basis Function (RBF) Kernel:
+Also known as the Gaussian kernel, this is a popular choice for many
+classification problems. It can map the data into an
+infinite-dimensional space and is effective in handling non-linear
+relationships. It’s used with kernel = “radial”. - Sigmoid Kernel: This
+kernel functions like the sigmoid function in logistic regression. It
+can be specified with kernel = “sigmoid”. This is similar to a
+two-layer, perceptron neural network.</p>
 <pre class="r"><code>set.seed(123)
 index &lt;- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
 trainData &lt;- df[index,]
@@ -1747,17 +1761,23 @@ legend(&quot;bottomright&quot;, legend = c(&quot;GLM&quot;, &quot;LDA&quot;, &qu
 “Koľko zo všetkých prípadov, ktoré model predpovedal ako pozitívne, bolo
 skutočne pozitívnych? Matematicky sa presnosť vypočíta ako: Vysoká
 presnosť znamená, že model má tendenciu robiť menej falošne pozitívnych
-predpovedí. #### Recall (Sensitivity or True Positive Rate) meria
-schopnosť modelu správne identifikovať pozitívne prípady z celkového
-počtu skutočných pozitívnych prípadov. Odpovedá na otázku:”Koľko zo
-všetkých skutočných pozitívnych prípadov model správne predpovedal ako
-pozitívne?” Vysoká spätná väzba znamená, že model zachytáva väčšinu
-skutočných pozitívnych prípadov. #### F1 Score je harmonický priemer
-Precision a Recall, ktorý poskytuje jedinú metriku na vyváženie
-Precision a Recall. Je užitočné najmä vtedy, keď potrebujete rovnako
-zohľadniť falošne pozitívne aj falošne negatívne výsledky. SkóreF1
-dosahuje najlepšiu hodnotu pri 1 (dokonalá presnosť a odvolanie) a
-najhoršiu pri 0.</p>
+predpovedí.</p>
+</div>
+<div id="recall-sensitivity-or-true-positive-rate" class="section level4">
+<h4>Recall (Sensitivity or True Positive Rate)</h4>
+<p>meria schopnosť modelu správne identifikovať pozitívne prípady z
+celkového počtu skutočných pozitívnych prípadov. Odpovedá na otázku:
+“Koľko zo všetkých skutočných pozitívnych prípadov model správne
+predpovedal ako pozitívne?” Vysoká spätná väzba znamená, že model
+zachytáva väčšinu skutočných pozitívnych prípadov.</p>
+</div>
+<div id="f1-score-1" class="section level4">
+<h4>F1 Score</h4>
+<p>je harmonický priemer Precision a Recall, ktorý poskytuje jedinú
+metriku na vyváženie Precision a Recall. Je užitočné najmä vtedy, keď
+potrebujete rovnako zohľadniť falošne pozitívne aj falošne negatívne
+výsledky. SkóreF1 dosahuje najlepšiu hodnotu pri 1 (dokonalá presnosť a
+odvolanie) a najhoršiu pri 0.</p>
 <pre class="r"><code># extrahujem precision a recall z confusion matrices
 precision_glm &lt;- glmConfMatrix$byClass[&#39;Pos Pred Value&#39;]
 recall_glm &lt;- glmConfMatrix$byClass[&#39;Sensitivity&#39;]

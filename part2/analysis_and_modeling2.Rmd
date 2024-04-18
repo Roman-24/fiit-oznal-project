@@ -68,7 +68,6 @@ library(MASS)
 library(reshape2)
 library(gridExtra)
 library(pROC)
-library(e1071)
 library(glmnet)
 library(PRROC)
 
@@ -633,6 +632,12 @@ Výhody použitia jadra RBF v SVM
 - RBF jadro je veľmi flexibilné a dokáže riešiť prípady, keď je vzťah medzi značkami tried a atribútmi nelineárny.
 - Funguje dobre vo vysokodimenzionálnych priestoroch, aj keď je počet dimenzií väčší ako počet vzoriek.
 - Je účinný v scenároch, kde dátové body nie sú lineárne oddeliteľné.
+#### Others
+kernel options available in e1071:
+- Linear Kernel: This kernel is the simplest, where the prediction is based on the linear combination of the features. It's used when the data is linearly separable. You can specify it with kernel = "linear".
+- Polynomial Kernel: This kernel allows for curved boundaries in the feature space. It's defined by the degree of the polynomial. Higher degrees can fit more complex structures but also risk overfitting. It can be specified using kernel = "polynomial", and you can also set the degree with the degree parameter.
+- Radial Basis Function (RBF) Kernel: Also known as the Gaussian kernel, this is a popular choice for many classification problems. It can map the data into an infinite-dimensional space and is effective in handling non-linear relationships. It's used with kernel = "radial".
+- Sigmoid Kernel: This kernel functions like the sigmoid function in logistic regression. It can be specified with kernel = "sigmoid". This is similar to a two-layer, perceptron neural network.
 ```{r}
 
 set.seed(123)
