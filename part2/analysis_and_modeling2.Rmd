@@ -669,6 +669,21 @@ print(svmConfMatrixTweak1)
 # pokročilé vyhodnotie
 confusionMatrix(svmPredictionsTweak1, testData$warning)
 ```
+#### SVM tweak 2
+```{r}
+# trenovanie SVM modelu
+svmModelTweak2 <- svm(warning ~ NOx + C2H3NO5 + CH4 + Pb + SO2 + O3 + CO + PAHs + H2CO + CFCs, data = trainData, kernel = "radial", cost = 1, scale = TRUE)
+summary(svmModelTweak2)
+# generovanie predpovedí
+svmPredictionsTweak2 <- predict(svmModelTweak2, newdata = testData)
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
+svmPredictionsTweak2 <- factor(svmPredictionsTweak2, levels = levels(testData$warning))
+# Confusion Matrix pre SVM model
+svmConfMatrixTweak2 <- table(Predicted = svmPredictionsTweak2, Actual = testData$warning)
+print(svmConfMatrixTweak2)
+# pokročilé vyhodnotie
+confusionMatrix(svmPredictionsTweak2, testData$warning)
+```
 
 ## Porovnanie modelov klasifikácie
 
@@ -681,6 +696,8 @@ ldaConfMatrix <- confusionMatrix(as.factor(ldaPredictions), testData$warning)
 svmConfMatrix <- confusionMatrix(as.factor(svmPredictions), testData$warning)
 ldaConfMatrixTweak1 <- confusionMatrix(as.factor(ldaPredictionsTweak1), testData$warning)
 svmConfMatrixTweak1 <- confusionMatrix(as.factor(svmPredictionsTweak1), testData$warning)
+svmConfMatrixTweak2 <- confusionMatrix(as.factor(svmPredictionsTweak2), testData$warning)
+
 
 # Vypísanie matíc a súhrnných štatistík
 print("GLM Confusion Matrix and Summary:")
@@ -698,6 +715,9 @@ print(ldaConfMatrixTweak1)
 print("SVM Tweak1 Confusion Matrix and Summary:")
 print(svmConfMatrixTweak1)
 
+print("SVM Tweak2 Confusion Matrix and Summary:")
+print(svmConfMatrixTweak2)
+
 ```
 
 ### Porovnanie ROC kriviek
@@ -709,6 +729,8 @@ lda_roc <- roc(response = testData$warning, predictor = as.numeric(ldaPrediction
 svm_roc <- roc(response = testData$warning, predictor = as.numeric(svmPredictions))
 lda_rocTweak1 <- roc(response = testData$warning, predictor = as.numeric(ldaPredictionsTweak1))
 svm_rocTweak1 <- roc(response = testData$warning, predictor = as.numeric(svmPredictionsTweak1))
+svm_rocTweak2 <- roc(response = testData$warning, predictor = as.numeric(svmPredictionsTweak2))
+
 
 # Vykreslenie ROC kriviek
 plot(glm_roc, main="ROC Curves", col="red")
@@ -716,7 +738,8 @@ plot(lda_roc, add=TRUE, col="blue")
 plot(svm_roc, add=TRUE, col="green")
 plot(lda_rocTweak1, add=TRUE, col="black")
 plot(svm_rocTweak1, add=TRUE, col="pink")
-legend("bottomright", legend=c("GLM", "LDA", "SVM", "LDA_TWEAK1", "SVM_TWEAK1"), col=c("red", "blue", "green", "black", "pink"), lwd=2)
+plot(svm_rocTweak2, add=TRUE, col="orange")
+legend("bottomright", legend=c("GLM", "LDA", "SVM", "LDA_TWEAK1", "SVM_TWEAK1", "SVM_TWEAK2"), col=c("red", "blue", "green", "black", "pink", "orange"), lwd=2)
 
 ```
 
@@ -736,6 +759,7 @@ lda_df <- conf_matrix_to_df(ldaConfMatrix$table)
 svm_df <- conf_matrix_to_df(svmConfMatrix$table)
 lda_df_Tweak1 <- conf_matrix_to_df(ldaConfMatrixTweak1$table)
 svm_df_Tweak1 <- conf_matrix_to_df(svmConfMatrixTweak1$table)
+svm_df_Tweak2 <- conf_matrix_to_df(svmConfMatrixTweak2$table)
 
 # Funkcia na vykreslenie heatmapy
 plot_conf_matrix <- function(data, title) {
@@ -754,27 +778,36 @@ plot_conf_matrix(lda_df, "LDA Confusion Matrix")
 plot_conf_matrix(svm_df, "SVM Confusion Matrix")
 plot_conf_matrix(lda_df_Tweak1, "LDA Tweak1 Confusion Matrix")
 plot_conf_matrix(svm_df_Tweak1, "SVM Tweak1 Confusion Matrix")
+plot_conf_matrix(svm_df_Tweak2, "SVM Tweak2 Confusion Matrix")
 
 ```
 
 ### Precision-Recall Curve and AUPRC:
+Plocha pod krivkou PR (AUPRC) kvantifikuje celkový výkon klasifikačného modelu.
+Vypočítava plochu pod krivkou PR, ktorá predstavuje schopnosť modelu dosiahnuť vysokú presnosť a vysokú odvolávku súčasne pri všetkých možných prahových hodnotách.
+vyššia hodnota AUPRC naznačuje lepšiu výkonnosť modelu, pretože znamená väčšiu plochu pod krivkou PR, čo naznačuje, že model môže dosiahnuť vysokú presnosť a vysokú odvolávku pri rôznych prahových hodnotách.
+AUPRC je obzvlášť užitočná pri práci s nevyváženými súbormi údajov, kde jedna trieda prevláda oveľa viac ako druhá, pretože sa zameriava na výkonnosť pozitívnej triedy, ktorá môže byť zaujímavejšia.
+v súhrne krivka Precision-Recall poskytuje prehľad o kompromise medzi presnosťou a odvolávkou pri rôznych klasifikačných prahoch, zatiaľ čo AUPRC sumarizuje celkovú výkonnosť modelu pri všetkých možných prahoch.
+Oba sú cennými nástrojmi na hodnotenie účinnosti klasifikačných modelov, najmä v scenároch, kde je prítomná nerovnováha tried.
 ```{r}
-# Generating PR curves with the curve parameter set to TRUE
+# Generovanie kriviek PR s parametrom krivky nastaveným na TRUE
+# curve parameter musi byt true ak chem plotovat krivku
 pr_glm <- pr.curve(scores.class0 = glmPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
 pr_lda <- pr.curve(scores.class0 = ldaPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
 pr_svm <- pr.curve(scores.class0 = svmPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
 pr_lda_Tweak1 <- pr.curve(scores.class0 = ldaPredictionsTweak1, weights.class0 = testData$warning == 1, curve = TRUE)
 pr_svm_Tweak1 <- pr.curve(scores.class0 = svmPredictionsTweak1, weights.class0 = testData$warning == 1, curve = TRUE)
+pr_svm_Tweak2 <- pr.curve(scores.class0 = svmPredictionsTweak2, weights.class0 = testData$warning == 1, curve = TRUE)
 
 
-# Check the structure of the PR curve objects
+# kontrola štruktúri PR curve objects
 str(pr_glm)
 str(pr_lda)
 str(pr_svm)
 str(pr_lda_Tweak1)
 str(pr_svm_Tweak1)
+str(pr_svm_Tweak2)
 
-# Plotting
 plot(pr_glm, col = "red")
 lines(pr_lda$recalls, pr_lda$precisions, col = "blue")
 lines(pr_svm$recalls, pr_svm$precisions, col = "green")
@@ -782,9 +815,26 @@ legend("bottomright", legend = c("GLM", "LDA", "SVM"), col = c("red", "blue", "g
 ```
 
 ### F1 Score
+
+#### Precision
+
+meria presnosť pozitívnych predpovedí modelu.
+Odpovedá na otázku: "Koľko zo všetkých prípadov, ktoré model predpovedal ako pozitívne, bolo skutočne pozitívnych? Matematicky sa presnosť vypočíta ako:
+Vysoká presnosť znamená, že model má tendenciu robiť menej falošne pozitívnych predpovedí.
+
+#### Recall (Sensitivity or True Positive Rate)
+
+meria schopnosť modelu správne identifikovať pozitívne prípady z celkového počtu skutočných pozitívnych prípadov.
+Odpovedá na otázku: "Koľko zo všetkých skutočných pozitívnych prípadov model správne predpovedal ako pozitívne?"
+Vysoká spätná väzba znamená, že model zachytáva väčšinu skutočných pozitívnych prípadov.
+
+#### F1 Score
+
+je harmonický priemer Precision a Recall, ktorý poskytuje jedinú metriku na vyváženie Precision a Recall.
+Je užitočné najmä vtedy, keď potrebujete rovnako zohľadniť falošne pozitívne aj falošne negatívne výsledky.
+SkóreF1 dosahuje najlepšiu hodnotu pri 1 (dokonalá presnosť a odvolanie) a najhoršiu pri 0.
 ```{r}
-library(caret)
-# Extracting precision and recall from confusion matrices
+# extrahujem precision a recall z confusion matrices
 precision_glm <- glmConfMatrix$byClass['Pos Pred Value']
 recall_glm <- glmConfMatrix$byClass['Sensitivity']
 f1_glm <- 2 * (precision_glm * recall_glm) / (precision_glm + recall_glm)
@@ -805,12 +855,16 @@ precision_svm_Tweak1 <- svmConfMatrixTweak1$byClass['Pos Pred Value']
 recall_svm_Tweak1 <- svmConfMatrixTweak1$byClass['Sensitivity']
 f1_svm_Tweak1 <- 2 * (precision_svm_Tweak1 * recall_svm_Tweak1) / (precision_svm_Tweak1 + recall_svm_Tweak1)
 
-# Print F1 Scores
+precision_svm_Tweak2 <- svmConfMatrixTweak2$byClass['Pos Pred Value']
+recall_svm_Tweak2 <- svmConfMatrixTweak2$byClass['Sensitivity']
+f1_svm_Tweak2 <- 2 * (precision_svm_Tweak2 * recall_svm_Tweak2) / (precision_svm_Tweak2 + recall_svm_Tweak2)
+
+
 print(paste("GLM F1 Score:", f1_glm))
 print(paste("LDA F1 Score:", f1_lda))
 print(paste("SVM F1 Score:", f1_svm))
-print(paste("LDA F1 Score:", f1_lda_Tweak1))
-print(paste("SVM F1 Score:", f1_svm_Tweak1))
-
+print(paste("LDA Tweak1 F1 Score:", f1_lda_Tweak1))
+print(paste("SVM Tweak1 F1 Score:", f1_svm_Tweak1))
+print(paste("SVM Tweak2 F1 Score:", f1_svm_Tweak2))
 
 ```
