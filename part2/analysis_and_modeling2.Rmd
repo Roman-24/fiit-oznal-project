@@ -75,8 +75,8 @@ library(PRROC)
 ```
 Načítanie dát
 ```{r}
-labor_measurements <- read.csv('/Users/roman/Desktop/development/oznal_project1/data/measurements.csv', sep = '\t')
-labor_stations <- read.csv('/Users/roman/Desktop/development/oznal_project1/data/stations.csv', sep = '\t')
+labor_measurements <- read.csv('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1/data/measurements.csv', sep = '\t')
+labor_stations <- read.csv('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1/data/stations.csv', sep = '\t')
 ```
 
 
@@ -494,35 +494,91 @@ print(p)
 ### Lasso regresia
 
 ```{r}
+## Lasso regresion
+
+head(df)
+library(glmnet)
+
+sample2 <- sample(c(TRUE, FALSE), nrow(df), replace = TRUE, prob = c(0.5, 0.3))
+train_data <- df[sample2,]
+test_data <- df[!sample2,]
+
 # Nastavenie cieľovej hodnoty na PM2.5
-y_data <- df$PM2.5
+y_train_data <- train_data$PM2.5
+y_test_data <- test_data$PM2.5
 
 # Nastavenie nezávislých premenných na PM10, SO2 a CO a vytvorenie matice dát
-x_data <- data.matrix(df[, c('PM10', 'SO2', 'CO')])
+x_train_data <- data.matrix(train_data[, c('PM10', 'SO2', 'CO')])
+x_test_data <- data.matrix(test_data[, c('PM10', 'SO2', 'CO')])
+
+
+x_train_data_SO2_CO <- data.matrix(train_data[, c('SO2', 'CO')])
+x_test_data_SO2_CO <- data.matrix(test_data[, c('SO2', 'CO')])
+
+
+x_train_data_C2H3NO5_NH3_PM10 <- data.matrix(train_data[, c('C2H3NO5', 'NH3', 'PM10')])
+x_test_data_C2H3NO5_NH3_PM10<- data.matrix(test_data[, c('C2H3NO5', 'NH3', 'PM10')])
 
 # Vytvorenie modelu
 # cv = Cros validation pre nájdenie optimálnej hodnoty pre Lambdu
 # gausiann -> dávame vedieť že robíme lineárnu regresiu
-cv_model <- cv.glmnet(x_data, y_data, alpha = 0, family = "gaussian")
+cv_model <- cv.glmnet(x_train_data, y_train_data, alpha = 1, family = "gaussian")
+cv_model_SO2_CO <- cv.glmnet(x_train_data_SO2_CO, y_train_data, alpha = 1, family = "gaussian")
+cv_model_C2H3NO5_NH3_PM10 <- cv.glmnet(x_train_data_C2H3NO5_NH3_PM10, y_train_data, alpha = 1, family = "gaussian")
 
 # Určenie optimálnej hodnoty lambda z krížovej validácie
+#hyperparameter lambda (λ) - vyvažuje kompromis medzi odchýlkou a rozptylom vo výsledných koeficientoch.
 best_lambda <- cv_model$lambda.min
+best_lambda_SO2_CO <- cv_model_SO2_CO$lambda.min
+best_lambda_C2H3NO5_NH3_PM10 <- cv_model_C2H3NO5_NH3_PM10$lambda.min
+
 
 # Vykreslenie grafu krížovej validácie
 plot(cv_model)
 
 # Získanie koeficientov najlepšieho modelu
-best_model <- glmnet(x_data, y_data, alpha = 1, lambda = best_lambda)
+best_model <- glmnet(x_train_data, y_train_data, alpha = 1, lambda = best_lambda)
+best_model_SO2_CO <- glmnet(x_train_data_SO2_CO, y_train_data, alpha = 1, lambda = best_lambda_SO2_CO)
+best_model_C2H3NO5_NH3_PM10 <- glmnet(x_train_data_C2H3NO5_NH3_PM10, y_train_data, alpha = 1, lambda = best_lambda_C2H3NO5_NH3_PM10)
+
 coef(best_model)
 
 # Predikcia hodnôt pomocou najlepšieho modelu
-y_predicted <- predict(best_model, s = best_lambda, newx = x_data)
+y_predicted <- predict(best_model, s = best_lambda, newx = x_test_data)
+y_predicted_S02_CO <- predict(best_model_SO2_CO, s = best_lambda_SO2_CO, newx = x_test_data_SO2_CO)
+y_predicted_C2H3NO5_NH3_PM10 <- predict(best_model_C2H3NO5_NH3_PM10, s = best_lambda_C2H3NO5_NH3_PM10, newx = x_test_data_C2H3NO5_NH3_PM10)
 
 
-sst <- sum((y_data - mean(y_data))^2)
-sse <- sum((y_predicted - y_data)^2)
+sst <- sum((y_test_data - mean(y_test_data))^2)
+sse <- sum((y_predicted - y_test_data)^2)
 rsq <- 1 - sse/sst
 rsq
+
+
+sst <- sum((y_test_data - mean(y_test_data))^2)
+sse <- sum((y_predicted_S02_CO - y_test_data)^2)
+rsq_SO2_CO <- 1 - sse/sst
+rsq_SO2_CO
+
+sst <- sum((y_test_data - mean(y_test_data))^2)
+sse <- sum((y_predicted_C2H3NO5_NH3_PM10 - y_test_data)^2)
+rsq_C2H3NO5_NH3_PM10 <- 1 - sse/sst
+rsq_C2H3NO5_NH3_PM10
+
+
+# Create a data frame with these values
+rsq_values <- data.frame(
+        Model = c("Model 1", "Model SO2_CO", "Model C2H3NO5_NH3_PM10"),
+        RSquared = c(rsq, rsq_SO2_CO, rsq_C2H3NO5_NH3_PM10)
+)
+
+# Print the table
+print(rsq_values)
+
+
+
+
+##TODO COMBINACIA PREDIKTOROV
 
 ```
 
