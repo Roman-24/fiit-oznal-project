@@ -50,8 +50,8 @@ Je zložený z dvoch súborov a to:
 # Initializácia a načítanie dát
 ```{r}
 getwd()
-setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
-#setwd('/Users/roman/Desktop/development/oznal_project1/')
+#setwd('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1')
+setwd('/Users/roman/Desktop/development/oznal_project1/')
 #setwd(getwd())
 ```
 Importovanie knižníc
@@ -69,6 +69,8 @@ library(reshape2)
 library(gridExtra)
 library(pROC)
 library(e1071)
+library(glmnet)
+library(PRROC)
 
 ```
 Načítanie dát
@@ -393,14 +395,14 @@ probabilities <- predict(logisticModel, newdata = testData, type = "response")
 # Na základe vrátených pravdepodobností priraďujeme triedy
 # Ak je pravdepodobnosť väčšia ako 0.5, priradí sa hodnota reprezentujúca TRUE warning
 # Ak je menšia alebo rovná 0.5, priradí sa FALSE warning
-predictions <- ifelse(probabilities > 0.5, levels(testData$warning)[2], levels(testData$warning)[1])
+glmPredictions <- ifelse(probabilities > 0.5, levels(testData$warning)[2], levels(testData$warning)[1])
 
 # konvertuje predpovedané hodnoty na faktorovú premennú s úrovňami definovanými v originálnej premennej
-predictions <- factor(predictions, levels = levels(testData$warning))
+glmPredictions <- factor(glmPredictions, levels = levels(testData$warning))
 ```
 #### Evaluacia modelu
 ```{r}
-confMatrix <- table(Predicted = predictions, Actual = testData$warning)
+confMatrix <- table(Predicted = glmPredictions, Actual = testData$warning)
 print(confMatrix)
 ```
 
@@ -408,7 +410,7 @@ confusionMatrix je tabuľka, ktorá ukazuje počty správnych a nesprávnych pre
 V tomto prípade sú predictions predpovedané hodnoty z modelu, a testData$warning sú skutočné hodnoty cieľovej premennej.
 Objekt confMat potom obsahuje túto metriku spolu s ďalšími štatistikami výkonu modelu.
 ```{r}
-confMat <- confusionMatrix(predictions, testData$warning)
+confMat <- confusionMatrix(glmPredictions, testData$warning)
 confMatMatrix <- as.matrix(confMat$table)
 ```
 
@@ -489,18 +491,14 @@ print(p)
 
 ## Lineárna regressia
 
+### Lasso regresia
 
 ```{r}
-## Lasso regresion
-
-
 # Nastavenie cieľovej hodnoty na PM2.5
 y_data <- df$PM2.5
 
 # Nastavenie nezávislých premenných na PM10, SO2 a CO a vytvorenie matice dát
 x_data <- data.matrix(df[, c('PM10', 'SO2', 'CO')])
-
-library(glmnet)
 
 # Vytvorenie modelu
 # cv = Cros validation pre nájdenie optimálnej hodnoty pre Lambdu
@@ -545,10 +543,10 @@ testData <- df[-index,]
 ldaModel <- lda(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData)
 
 # Predpovedanie na testovacom súbore údajov
-predictions <- predict(ldaModel, newdata = testData)$class
+ldaPredictions <- predict(ldaModel, newdata = testData)$class
 
 # evaluacia modelu
-table(Predicted = predictions, Actual = testData$warning)
+table(Predicted = ldaPredictions, Actual = testData$warning)
 ```
 
 ### SVM
@@ -589,59 +587,115 @@ confusionMatrix(svmPredictions, testData$warning)
 
 ```
  ## Porovnanie modelov klasifikácie
+
+### Basic porovnanie
 ```{r}
-set.seed(123)
-index <- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
-trainData <- df[index,]
-testData <- df[-index,]
 
-# Treba poriesit ze testData$warning je faktor so specifickymi levelmi
-testData$warning <- factor(testData$warning, levels = levels(testData$warning))
+# Vytvorenie confusionMatrix matíc pre každý model
+glmConfMatrix <- confusionMatrix(as.factor(glmPredictions), testData$warning)
+ldaConfMatrix <- confusionMatrix(as.factor(ldaPredictions), testData$warning)
+svmConfMatrix <- confusionMatrix(as.factor(svmPredictions), testData$warning)
 
-# Predikovanie na test data
-pred1 <- predict(logisticModel, testData)
-pred2 <- predict(ldaModel, testData)
-pred3 <- predict(svmModel, testData)
+# Vypísanie matíc a súhrnných štatistík
+print("GLM Confusion Matrix and Summary:")
+print(glmConfMatrix)
 
-# Prehodnotenie faktorov predpovedí
-pred1 <- factor(pred1, levels = levels(testData$warning))
-pred2 <- factor(pred2, levels = levels(testData$warning))
-pred3 <- factor(pred3, levels = levels(testData$warning))
+print("LDA Confusion Matrix and Summary:")
+print(ldaConfMatrix)
 
-# vytvorenie confusion matíc
-cm1 <- confusionMatrix(pred1, testData$warning)
-cm2 <- confusionMatrix(pred2, testData$warning)
-cm3 <- confusionMatrix(pred3, testData$warning)
+print("SVM Confusion Matrix and Summary:")
+print(svmConfMatrix)
+
+```
+
+### Porovnanie ROC kriviek
+```{r}
+
+# Výpočet ROC kriviek pre každý model
+glm_roc <- roc(response = testData$warning, predictor = as.numeric(glmPredictions))
+lda_roc <- roc(response = testData$warning, predictor = as.numeric(ldaPredictions))
+svm_roc <- roc(response = testData$warning, predictor = as.numeric(svmPredictions))
+
+# Vykreslenie ROC kriviek
+plot(glm_roc, main="ROC Curves", col="red")
+plot(lda_roc, add=TRUE, col="blue")
+plot(svm_roc, add=TRUE, col="green")
+legend("bottomright", legend=c("GLM", "LDA", "SVM"), col=c("red", "blue", "green"), lwd=2)
+
+```
+
+### Heatmapy pre Confusion Matrix
+```{r}
+
+# Pomocná funkcia na premenu zmätkovej matice na data frame vhodný pre ggplot
+conf_matrix_to_df <- function(conf_matrix) {
+  df <- as.data.frame(as.table(conf_matrix))
+  colnames(df) <- c("Prediction", "Reference", "Frequency")  # Meníme názvy stĺpcov pre zrozumiteľnosť a správne mapovanie
+  return(df)
+}
+
+# Prevod zmätkových matíc na data frame
+glm_df <- conf_matrix_to_df(glmConfMatrix$table)
+lda_df <- conf_matrix_to_df(ldaConfMatrix$table)
+svm_df <- conf_matrix_to_df(svmConfMatrix$table)
+
+# Funkcia na vykreslenie heatmapy
+plot_conf_matrix <- function(data, title) {
+  ggplot(data, aes(x = Prediction, y = Reference, fill = Frequency)) +
+          geom_tile(color = "white") +
+          scale_fill_gradient(low = "blue", high = "red") +
+          theme_minimal() +
+          theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+          labs(title = title, x = 'Predicted Class', y = 'Actual Class') +
+          geom_text(aes(label = Frequency), vjust = 1.5, color = "white")
+}
+
+# Vykreslenie heatmap pre každú zmätkovú maticu
+plot_conf_matrix(glm_df, "GLM Confusion Matrix")
+plot_conf_matrix(lda_df, "LDA Confusion Matrix")
+plot_conf_matrix(svm_df, "SVM Confusion Matrix")
+
+```
+
+### Precision-Recall Curve and AUPRC:
+```{r}
+# Generating PR curves with the curve parameter set to TRUE
+pr_glm <- pr.curve(scores.class0 = glmPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
+pr_lda <- pr.curve(scores.class0 = ldaPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
+pr_svm <- pr.curve(scores.class0 = svmPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
+
+# Check the structure of the PR curve objects
+str(pr_glm)
+str(pr_lda)
+str(pr_svm)
+
+# Plotting
+plot(pr_glm, col = "red")
+lines(pr_lda$recalls, pr_lda$precisions, col = "blue")
+lines(pr_svm$recalls, pr_svm$precisions, col = "green")
+legend("bottomright", legend = c("GLM", "LDA", "SVM"), col = c("red", "blue", "green"), lty = 1)
+```
+
+### F1 Score
+```{r}
+library(caret)
+# Extracting precision and recall from confusion matrices
+precision_glm <- glmConfMatrix$byClass['Pos Pred Value']
+recall_glm <- glmConfMatrix$byClass['Sensitivity']
+f1_glm <- 2 * (precision_glm * recall_glm) / (precision_glm + recall_glm)
+
+precision_lda <- ldaConfMatrix$byClass['Pos Pred Value']
+recall_lda <- ldaConfMatrix$byClass['Sensitivity']
+f1_lda <- 2 * (precision_lda * recall_lda) / (precision_lda + recall_lda)
+
+precision_svm <- svmConfMatrix$byClass['Pos Pred Value']
+recall_svm <- svmConfMatrix$byClass['Sensitivity']
+f1_svm <- 2 * (precision_svm * recall_svm) / (precision_svm + recall_svm)
+
+# Print F1 Scores
+print(paste("GLM F1 Score:", f1_glm))
+print(paste("LDA F1 Score:", f1_lda))
+print(paste("SVM F1 Score:", f1_svm))
 
 
-# Confusion Matrix pre kazdy model
-cm1 <- confusionMatrix(pred1, testData$warning)
-cm2 <- confusionMatrix(pred2, testData$warning)
-cm3 <- confusionMatrix(pred3, testData$warning)
-
-# Vypis presnosti modelov
-print(cm1$overall['Accuracy'])
-print(cm2$overall['Accuracy'])
-print(cm3$overall['Accuracy'])
-
-# ROC Curve a AUC
-# V závislosti od modelu možno treba použiť rôzne funkcie na získanie pravdepodobností
-prob1 <- predict(logisticModel, testData, type = "prob")[,2]
-prob2 <- predict(ldaModel, testData, type = "prob")[,2]
-prob3 <- predict(svmModel, testData, type = "prob")[,2]
-
-roc1 <- roc(response = testData$warning, predictor = prob1)
-roc2 <- roc(response = testData$warning, predictor = prob2)
-roc3 <- roc(response = testData$warning, predictor = prob3)
-
-# Vyplotovanie ROC Curves
-plot(roc1, col = "red")
-lines(roc2, col = "blue")
-lines(roc3, col = "green")
-legend("bottomright", legend = c("Model 1", "Model 2", "Model 3"), col = c("red", "blue", "green"), lwd = 2)
-
-# vypis AUC values
-cat("AUC for Model 1:", auc(roc1), "\n")
-cat("AUC for Model 2:", auc(roc2), "\n")
-cat("AUC for Model 3:", auc(roc3), "\n")
 ```
