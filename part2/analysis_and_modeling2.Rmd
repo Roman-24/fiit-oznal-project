@@ -75,8 +75,8 @@ library(PRROC)
 ```
 Načítanie dát
 ```{r}
-labor_measurements <- read.csv('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1/data/measurements.csv', sep = '\t')
-labor_stations <- read.csv('/Users/roman.osadsky/Desktop/ROMAN/FIIT/OZNAL_PROJECT/oznal_project1/data/stations.csv', sep = '\t')
+labor_measurements <- read.csv('/Users/roman/Desktop/development/oznal_project1/data/measurements.csv', sep = '\t')
+labor_stations <- read.csv('/Users/roman/Desktop/development/oznal_project1/data/stations.csv', sep = '\t')
 ```
 
 
@@ -605,6 +605,18 @@ ldaPredictions <- predict(ldaModel, newdata = testData)$class
 table(Predicted = ldaPredictions, Actual = testData$warning)
 ```
 
+#### LDA tweak 1
+```{r}
+# Trénovanie modelu Linear Discriminant Analysis (LDA)
+ldaModelTweak1 <- lda(warning ~ NH3 + C2H3NO5, data = trainData)
+
+# Predpovedanie na testovacom súbore údajov
+ldaPredictionsTweak1 <- predict(ldaModelTweak1, newdata = testData)$class
+
+# evaluacia modelu
+table(Predicted = ldaPredictionsTweak1, Actual = testData$warning)
+```
+
 ### SVM
 SVM sú typom algoritmu učenia pod dohľadom, ktorý sa používa na klasifikačné aj regresné úlohy.
 Sú obzvlášť výkonné pre vysokorozmerné údaje.
@@ -615,7 +627,7 @@ Kernel je metóda používaná v SVM, ktorá umožňuje učenie vo vysokodimenzi
 Je to užitočné najmä vtedy, keď hranica medzi triedami nie je lineárna.
 Použitím funkcie jadra môže SVM vykonávať zložité klasifikácie pomocou lineárneho klasifikátora implicitným mapovaním vstupných údajov do vysokodimenzionálnych priestorov príznakov.
 
-## Radial Basis Function (RBF) Kernel
+#### Radial Basis Function (RBF) Kernel
 Kernel RBF je jednou z najbežnejších funkcií používaných v SVM. Označuje sa aj ako Gaussov kernel.
 Výhody použitia jadra RBF v SVM
 - RBF jadro je veľmi flexibilné a dokáže riešiť prípady, keď je vzťah medzi značkami tried a atribútmi nelineárny.
@@ -642,7 +654,23 @@ print(svmConfMatrix)
 confusionMatrix(svmPredictions, testData$warning)
 
 ```
- ## Porovnanie modelov klasifikácie
+#### SVM tweak 1
+```{r}
+# trenovanie SVM modelu
+svmModelTweak1 <- svm(warning ~ NH3 + C2H3NO5, data = trainData, kernel = "radial", cost = 1, scale = TRUE)
+summary(svmModelTweak1)
+# generovanie predpovedí
+svmPredictionsTweak1 <- predict(svmModelTweak1, newdata = testData)
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
+svmPredictionsTweak1 <- factor(svmPredictionsTweak1, levels = levels(testData$warning))
+# Confusion Matrix pre SVM model
+svmConfMatrixTweak1 <- table(Predicted = svmPredictionsTweak1, Actual = testData$warning)
+print(svmConfMatrixTweak1)
+# pokročilé vyhodnotie
+confusionMatrix(svmPredictionsTweak1, testData$warning)
+```
+
+## Porovnanie modelov klasifikácie
 
 ### Basic porovnanie
 ```{r}
@@ -651,6 +679,8 @@ confusionMatrix(svmPredictions, testData$warning)
 glmConfMatrix <- confusionMatrix(as.factor(glmPredictions), testData$warning)
 ldaConfMatrix <- confusionMatrix(as.factor(ldaPredictions), testData$warning)
 svmConfMatrix <- confusionMatrix(as.factor(svmPredictions), testData$warning)
+ldaConfMatrixTweak1 <- confusionMatrix(as.factor(ldaPredictionsTweak1), testData$warning)
+svmConfMatrixTweak1 <- confusionMatrix(as.factor(svmPredictionsTweak1), testData$warning)
 
 # Vypísanie matíc a súhrnných štatistík
 print("GLM Confusion Matrix and Summary:")
@@ -662,6 +692,12 @@ print(ldaConfMatrix)
 print("SVM Confusion Matrix and Summary:")
 print(svmConfMatrix)
 
+print("LDA Tweak1 Confusion Matrix and Summary:")
+print(ldaConfMatrixTweak1)
+
+print("SVM Tweak1 Confusion Matrix and Summary:")
+print(svmConfMatrixTweak1)
+
 ```
 
 ### Porovnanie ROC kriviek
@@ -671,12 +707,16 @@ print(svmConfMatrix)
 glm_roc <- roc(response = testData$warning, predictor = as.numeric(glmPredictions))
 lda_roc <- roc(response = testData$warning, predictor = as.numeric(ldaPredictions))
 svm_roc <- roc(response = testData$warning, predictor = as.numeric(svmPredictions))
+lda_rocTweak1 <- roc(response = testData$warning, predictor = as.numeric(ldaPredictionsTweak1))
+svm_rocTweak1 <- roc(response = testData$warning, predictor = as.numeric(svmPredictionsTweak1))
 
 # Vykreslenie ROC kriviek
 plot(glm_roc, main="ROC Curves", col="red")
 plot(lda_roc, add=TRUE, col="blue")
 plot(svm_roc, add=TRUE, col="green")
-legend("bottomright", legend=c("GLM", "LDA", "SVM"), col=c("red", "blue", "green"), lwd=2)
+plot(lda_rocTweak1, add=TRUE, col="black")
+plot(svm_rocTweak1, add=TRUE, col="pink")
+legend("bottomright", legend=c("GLM", "LDA", "SVM", "LDA_TWEAK1", "SVM_TWEAK1"), col=c("red", "blue", "green", "black", "pink"), lwd=2)
 
 ```
 
@@ -694,6 +734,8 @@ conf_matrix_to_df <- function(conf_matrix) {
 glm_df <- conf_matrix_to_df(glmConfMatrix$table)
 lda_df <- conf_matrix_to_df(ldaConfMatrix$table)
 svm_df <- conf_matrix_to_df(svmConfMatrix$table)
+lda_df_Tweak1 <- conf_matrix_to_df(ldaConfMatrixTweak1$table)
+svm_df_Tweak1 <- conf_matrix_to_df(svmConfMatrixTweak1$table)
 
 # Funkcia na vykreslenie heatmapy
 plot_conf_matrix <- function(data, title) {
@@ -710,6 +752,8 @@ plot_conf_matrix <- function(data, title) {
 plot_conf_matrix(glm_df, "GLM Confusion Matrix")
 plot_conf_matrix(lda_df, "LDA Confusion Matrix")
 plot_conf_matrix(svm_df, "SVM Confusion Matrix")
+plot_conf_matrix(lda_df_Tweak1, "LDA Tweak1 Confusion Matrix")
+plot_conf_matrix(svm_df_Tweak1, "SVM Tweak1 Confusion Matrix")
 
 ```
 
@@ -719,11 +763,16 @@ plot_conf_matrix(svm_df, "SVM Confusion Matrix")
 pr_glm <- pr.curve(scores.class0 = glmPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
 pr_lda <- pr.curve(scores.class0 = ldaPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
 pr_svm <- pr.curve(scores.class0 = svmPredictions, weights.class0 = testData$warning == 1, curve = TRUE)
+pr_lda_Tweak1 <- pr.curve(scores.class0 = ldaPredictionsTweak1, weights.class0 = testData$warning == 1, curve = TRUE)
+pr_svm_Tweak1 <- pr.curve(scores.class0 = svmPredictionsTweak1, weights.class0 = testData$warning == 1, curve = TRUE)
+
 
 # Check the structure of the PR curve objects
 str(pr_glm)
 str(pr_lda)
 str(pr_svm)
+str(pr_lda_Tweak1)
+str(pr_svm_Tweak1)
 
 # Plotting
 plot(pr_glm, col = "red")
@@ -748,10 +797,20 @@ precision_svm <- svmConfMatrix$byClass['Pos Pred Value']
 recall_svm <- svmConfMatrix$byClass['Sensitivity']
 f1_svm <- 2 * (precision_svm * recall_svm) / (precision_svm + recall_svm)
 
+precision_lda_Tweak1 <- ldaConfMatrixTweak1$byClass['Pos Pred Value']
+recall_lda_Tweak1<- ldaConfMatrixTweak1$byClass['Sensitivity']
+f1_lda_Tweak1 <- 2 * (precision_lda_Tweak1 * recall_lda_Tweak1) / (precision_lda_Tweak1 + recall_lda_Tweak1)
+
+precision_svm_Tweak1 <- svmConfMatrixTweak1$byClass['Pos Pred Value']
+recall_svm_Tweak1 <- svmConfMatrixTweak1$byClass['Sensitivity']
+f1_svm_Tweak1 <- 2 * (precision_svm_Tweak1 * recall_svm_Tweak1) / (precision_svm_Tweak1 + recall_svm_Tweak1)
+
 # Print F1 Scores
 print(paste("GLM F1 Score:", f1_glm))
 print(paste("LDA F1 Score:", f1_lda))
 print(paste("SVM F1 Score:", f1_svm))
+print(paste("LDA F1 Score:", f1_lda_Tweak1))
+print(paste("SVM F1 Score:", f1_svm_Tweak1))
 
 
 ```
