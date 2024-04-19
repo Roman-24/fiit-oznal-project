@@ -518,31 +518,53 @@ x_test_data_SO2_CO <- data.matrix(test_data[, c('SO2', 'CO')])
 x_train_data_C2H3NO5_NH3_PM10 <- data.matrix(train_data[, c('C2H3NO5', 'NH3', 'PM10')])
 x_test_data_C2H3NO5_NH3_PM10<- data.matrix(test_data[, c('C2H3NO5', 'NH3', 'PM10')])
 
-# Vytvorenie modelu
+# Vytvorenie krížovej validácie
 # cv = Cros validation pre nájdenie optimálnej hodnoty pre Lambdu
 # gausiann -> dávame vedieť že robíme lineárnu regresiu
+# alpha = 1 -> pre lasso regressiu
 cv_model <- cv.glmnet(x_train_data, y_train_data, alpha = 1, family = "gaussian")
 cv_model_SO2_CO <- cv.glmnet(x_train_data_SO2_CO, y_train_data, alpha = 1, family = "gaussian")
 cv_model_C2H3NO5_NH3_PM10 <- cv.glmnet(x_train_data_C2H3NO5_NH3_PM10, y_train_data, alpha = 1, family = "gaussian")
 
 # Určenie optimálnej hodnoty lambda z krížovej validácie
-#hyperparameter lambda (λ) - vyvažuje kompromis medzi odchýlkou a rozptylom vo výsledných koeficientoch.
+# hyperparameter lambda (λ) - vyvažuje kompromis medzi odchýlkou a rozptylom vo výsledných koeficientoch.
+# labda môže byť od 0 do positive nekonečna
 best_lambda <- cv_model$lambda.min
 best_lambda_SO2_CO <- cv_model_SO2_CO$lambda.min
 best_lambda_C2H3NO5_NH3_PM10 <- cv_model_C2H3NO5_NH3_PM10$lambda.min
 
+best_lambda
+best_lambda_SO2_CO
+best_lambda_C2H3NO5_NH3_PM10
+
+lambda_values <- data.frame(
+        Model = c("Model 1", "Model SO2_CO", "Model C2H3NO5_NH3_PM10"),
+        Labdas = c(best_lambda, best_lambda_SO2_CO, best_lambda_C2H3NO5_NH3_PM10)
+)
+lambda_values
 
 # Vykreslenie grafu krížovej validácie
+# Na tom plate môžeme najsť najnižšiu labdu, s najnizším cross-valudation errorom
 plot(cv_model)
+plot(cv_model_SO2_CO)
+plot(cv_model_C2H3NO5_NH3_PM10)
 
-# Získanie koeficientov najlepšieho modelu
+```
+```{r}
+# Získanie koeficientov najlepšieho Lasso regresného modelu
 best_model <- glmnet(x_train_data, y_train_data, alpha = 1, lambda = best_lambda)
 best_model_SO2_CO <- glmnet(x_train_data_SO2_CO, y_train_data, alpha = 1, lambda = best_lambda_SO2_CO)
 best_model_C2H3NO5_NH3_PM10 <- glmnet(x_train_data_C2H3NO5_NH3_PM10, y_train_data, alpha = 1, lambda = best_lambda_C2H3NO5_NH3_PM10)
-
 coef(best_model)
+coef(best_model_SO2_CO)
+coef(best_model_C2H3NO5_NH3_PM10)
+```
 
+Môžeme vidieť že pri modely s prediktormi SO2, CO má C0 bola eliminovaná z modelu čé naznačuje, že CO nemá štatisticky významný vzťah.
+
+```{r}
 # Predikcia hodnôt pomocou najlepšieho modelu
+# do s dávame lambdu ako penalizačný parameter pre minimalizáciu chyby predikcie a prevenciu nadmerného prispôsobenia sa dátam.
 y_predicted <- predict(best_model, s = best_lambda, newx = x_test_data)
 y_predicted_S02_CO <- predict(best_model_SO2_CO, s = best_lambda_SO2_CO, newx = x_test_data_SO2_CO)
 y_predicted_C2H3NO5_NH3_PM10 <- predict(best_model_C2H3NO5_NH3_PM10, s = best_lambda_C2H3NO5_NH3_PM10, newx = x_test_data_C2H3NO5_NH3_PM10)
@@ -551,35 +573,34 @@ y_predicted_C2H3NO5_NH3_PM10 <- predict(best_model_C2H3NO5_NH3_PM10, s = best_la
 sst <- sum((y_test_data - mean(y_test_data))^2)
 sse <- sum((y_predicted - y_test_data)^2)
 rsq <- 1 - sse/sst
-rsq
 
 
 sst <- sum((y_test_data - mean(y_test_data))^2)
 sse <- sum((y_predicted_S02_CO - y_test_data)^2)
 rsq_SO2_CO <- 1 - sse/sst
-rsq_SO2_CO
 
 sst <- sum((y_test_data - mean(y_test_data))^2)
 sse <- sum((y_predicted_C2H3NO5_NH3_PM10 - y_test_data)^2)
 rsq_C2H3NO5_NH3_PM10 <- 1 - sse/sst
-rsq_C2H3NO5_NH3_PM10
 
 
-# Create a data frame with these values
+mse <- (sum(y_predicted - y_test_data)^2/length(y_predicted))
+mse_SE2_CO <- (sum(y_predicted_S02_CO - y_test_data)^2/length(y_predicted_S02_CO))
+mse_C2H3NO5_NH3_PM10 <- (sum(y_predicted_C2H3NO5_NH3_PM10 - y_test_data)^2/length(y_predicted_C2H3NO5_NH3_PM10))
+
+
 rsq_values <- data.frame(
         Model = c("Model 1", "Model SO2_CO", "Model C2H3NO5_NH3_PM10"),
-        RSquared = c(rsq, rsq_SO2_CO, rsq_C2H3NO5_NH3_PM10)
+        RSquared = c(rsq, rsq_SO2_CO, rsq_C2H3NO5_NH3_PM10),
+        MSEError =  c(mse, mse_SE2_CO, mse_C2H3NO5_NH3_PM10)
 )
 
-# Print the table
 print(rsq_values)
-
-
-
-
-##TODO COMBINACIA PREDIKTOROV
-
 ```
+
+Ked sa pozrieme na MSE hodnotu, model C2H3NO5_NH3_PM10 funguje najlepšie z hľadiska presnosti predpovede, a to aj napriek nižšej RSQ hodnote.
+
+Model 1 nemá najnižšiu MSE,  a najvyčší rsquared môže byť vhodný model na dalšiu prácu.
 
 ## Klasifikácia
 
