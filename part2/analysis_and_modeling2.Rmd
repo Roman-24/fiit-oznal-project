@@ -544,7 +544,7 @@ lambda_values <- data.frame(
 lambda_values
 
 # Vykreslenie grafu krížovej validácie
-# Na tom plate môžeme najsť najnižšiu labdu, s najnizším cross-valudation errorom
+# Na tom plote môžeme najsť najnižšiu labdu, s najnizším cross-valudation errorom
 plot(cv_model)
 plot(cv_model_SO2_CO)
 plot(cv_model_C2H3NO5_NH3_PM10)
@@ -555,6 +555,9 @@ plot(cv_model_C2H3NO5_NH3_PM10)
 best_model <- glmnet(x_train_data, y_train_data, alpha = 1, lambda = best_lambda)
 best_model_SO2_CO <- glmnet(x_train_data_SO2_CO, y_train_data, alpha = 1, lambda = best_lambda_SO2_CO)
 best_model_C2H3NO5_NH3_PM10 <- glmnet(x_train_data_C2H3NO5_NH3_PM10, y_train_data, alpha = 1, lambda = best_lambda_C2H3NO5_NH3_PM10)
+
+# Koeficienty linarnej regressie
+# PM25 = 12.88 - 0.11 * PM10 - 0.23 * SO2 + 0.10 * CO
 coef(best_model)
 coef(best_model_SO2_CO)
 coef(best_model_C2H3NO5_NH3_PM10)
@@ -564,7 +567,7 @@ Môžeme vidieť že pri modely s prediktormi SO2, CO má C0 bola eliminovaná z
 
 ```{r}
 # Predikcia hodnôt pomocou najlepšieho modelu
-# do s dávame lambdu ako penalizačný parameter pre minimalizáciu chyby predikcie a prevenciu nadmerného prispôsobenia sa dátam.
+# do modelu dávame lambdu ako penalizačný parameter pre minimalizáciu chyby predikcie ako prevenciu nadmerného prispôsobenia sa dátam.
 y_predicted <- predict(best_model, s = best_lambda, newx = x_test_data)
 y_predicted_S02_CO <- predict(best_model_SO2_CO, s = best_lambda_SO2_CO, newx = x_test_data_SO2_CO)
 y_predicted_C2H3NO5_NH3_PM10 <- predict(best_model_C2H3NO5_NH3_PM10, s = best_lambda_C2H3NO5_NH3_PM10, newx = x_test_data_C2H3NO5_NH3_PM10)
