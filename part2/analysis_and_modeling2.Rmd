@@ -494,7 +494,7 @@ print(p)
 
 ```{r}
 ## Lasso regresion
-
+set.seed(123)
 head(df)
 library(glmnet)
 
@@ -600,8 +600,6 @@ rsq_values <- data.frame(
 
 print(rsq_values)
 ```
-
-Ked sa pozrieme na MSE hodnotu, model C2H3NO5_NH3_PM10 funguje najlepšie z hľadiska presnosti predpovede, a to aj napriek nižšej RSQ hodnote.
 
 Model 1 nemá najnižšiu MSE,  a najvyčší rsquared môže byť vhodný model na dalšiu prácu.
 
@@ -746,7 +744,7 @@ confusionMatrix(svmPredictionsPolynomial, testData$warning)
 #### Zmena kernelu na Linear
 ```{r}
 # trenovanie SVM modelu
-svmModelLinear <- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = "polynomial", cost = 1, scale = TRUE)
+svmModelLinear <- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = "linear", cost = 1, scale = TRUE)
 summary(svmModelLinear)
 # generovanie predpovedí
 svmPredictionsLinear <- predict(svmModelLinear, newdata = testData)
