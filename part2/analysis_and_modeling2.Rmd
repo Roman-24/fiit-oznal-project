@@ -609,6 +609,9 @@ Model 1 nemá najnižšiu MSE,  a najvyčší rsquared môže byť vhodný model
 
 ### LDA
 
+Lineárna diskriminačná analýza (LDA) je klasifikátor a zároveň technika redukcie dimenzionality, ktorá sa široko používa v štatistike, rozpoznávaní vzorov a strojovom učení na hľadanie lineárnej kombinácie znakov, ktorá charakterizuje alebo oddeľuje dve alebo viac tried objektov alebo udalostí.
+Cieľom LDA je premietnuť priestor príznakov (premenné súboru údajov) do priestoru s nižšou dimenziou s dobrou oddeliteľnosťou tried, aby sa zabránilo nadmernému prispôsobeniu ("prekliatie dimenzionality") a tiež znížili výpočtové náklady.
+
 ```{r}
 
 # rozdelenie data setu na test a train
