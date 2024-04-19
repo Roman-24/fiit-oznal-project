@@ -1189,22 +1189,46 @@ jadro je veľmi flexibilné a dokáže riešiť prípady, keď je vzťah medzi
 značkami tried a atribútmi nelineárny. - Funguje dobre vo
 vysokodimenzionálnych priestoroch, aj keď je počet dimenzií väčší ako
 počet vzoriek. - Je účinný v scenároch, kde dátové body nie sú lineárne
-oddeliteľné. #### Others kernel options available in e1071: - Linear
-Kernel: This kernel is the simplest, where the prediction is based on
-the linear combination of the features. It’s used when the data is
-linearly separable. You can specify it with kernel = “linear”. -
-Polynomial Kernel: This kernel allows for curved boundaries in the
-feature space. It’s defined by the degree of the polynomial. Higher
-degrees can fit more complex structures but also risk overfitting. It
-can be specified using kernel = “polynomial”, and you can also set the
-degree with the degree parameter. - Radial Basis Function (RBF) Kernel:
-Also known as the Gaussian kernel, this is a popular choice for many
-classification problems. It can map the data into an
-infinite-dimensional space and is effective in handling non-linear
-relationships. It’s used with kernel = “radial”. - Sigmoid Kernel: This
-kernel functions like the sigmoid function in logistic regression. It
-can be specified with kernel = “sigmoid”. This is similar to a
-two-layer, perceptron neural network.</p>
+oddeliteľné.</p>
+</div>
+<div id="others" class="section level4">
+<h4>Others</h4>
+<p>kernel možnosti v e1071:</p>
+<ul>
+<li>Linear Kernel: je najjednoduchšie, pričom predikcia je založená na
+lineárnej kombinácii prvkov. Používa sa, keď sú údaje lineárne
+oddeliteľné. Môžete ho zadať pomocou kernel = “linear”.</li>
+<li>Polynomial Kernel: umožňuje ohraničiť priestor prvkov zakrivenými
+hranicami. Je definované stupňom polynómu. Vyššie stupne môžu vyhovovať
+zložitejším štruktúram, ale hrozí aj riziko nadmerného prispôsobenia.
+Možno ho zadať pomocou kernel = “polynomial” a stupeň môžete nastaviť aj
+pomocou parametra degree.</li>
+<li>Radial Basis Function (RBF) Kernel: známe aj ako Gaussovo jadro, je
+obľúbenou voľbou pre mnohé klasifikačné problémy. Dokáže mapovať údaje
+do nekonečne rozmerného priestoru a je účinné pri spracovaní
+nelineárnych vzťahov. Používa sa s jadrom = “radiálny”.</li>
+<li>Sigmoid Kernel: funguje ako sigmoidná funkcia v logistickej
+regresii. Možno ho zadať pomocou kernel = “sigmoid”. Je to podobné
+dvojvrstvovej perceptrónovej neurónovej sieti.</li>
+</ul>
+</div>
+<div id="params" class="section level4">
+<h4>Params</h4>
+<ul>
+<li>Cost - riadi kompromis medzi dosiahnutím nízkej chyby na trénovaných
+údajoch a minimalizáciou zložitosti modelu pre lepšiu generalizáciu.
+Vyššia cena sa snaží správne klasifikovať všetky trénovacie príklady (čo
+môže viesť k nadmernému prispôsobeniu), zatiaľ čo nižšia cena môže viesť
+k všeobecnejšiemu riešeniu, aj keď nesprávne klasifikuje viac bodov. Tu
+uvedená voľba 1 je štandardným východiskovým bodom, ale mala by sa
+vyladiť, často pomocou techník, ako je cross-validation</li>
+<li>Scale - určuje, či sa majú predikčné premenné pred trénovaním modelu
+škálovať tak, aby mali nulovú strednú hodnotu a jednotkový rozptyl.
+Škálovanie je dôležité najmä pre SVM, pretože môže výrazne ovplyvniť
+výkonnosť funkcie jadra tým, že zabezpečí, aby všetky prvky prispievali
+k výpočtom vzdialenosti v priestore prvkov rovnakou mierou. Pri
+používaní SVM je vo všeobecnosti dobrým zvykom škálovať údaje.</li>
+</ul>
 <pre class="r"><code>set.seed(123)
 index &lt;- sample(seq_len(nrow(df)), round(0.7 * nrow(df)))
 trainData &lt;- df[index,]
@@ -1403,6 +1427,147 @@ confusionMatrix(svmPredictionsTweak2, testData$warning)</code></pre>
 ##          Detection Rate : 0.2840          
 ##    Detection Prevalence : 0.3266          
 ##       Balanced Accuracy : 0.8145          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+</div>
+<div id="zmena-kernelu-na-polynomial" class="section level4">
+<h4>Zmena kernelu na Polynomial</h4>
+<p>Stupeň polynómu je kľúčovým parametrom, pretože určuje flexibilitu
+rozhodovacej hranice. Vyšší stupeň umožňuje, aby sa hranica viac
+zakrivovala, čím potenciálne vyhovuje zložitejším vzorom v údajoch. Tým
+sa však zvyšuje aj riziko nadmerného prispôsobenia, najmä ak je stupeň
+príliš vysoký vzhľadom na zložitosť alebo množstvo údajov.</p>
+<pre class="r"><code># trenovanie SVM modelu
+svmModelPolynomial &lt;- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = &quot;polynomial&quot;, cost = 1, scale = TRUE, degree = 4)
+summary(svmModelPolynomial)</code></pre>
+<pre><code>## 
+## Call:
+## svm(formula = warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, 
+##     kernel = &quot;polynomial&quot;, cost = 1, degree = 4, scale = TRUE)
+## 
+## 
+## Parameters:
+##    SVM-Type:  C-classification 
+##  SVM-Kernel:  polynomial 
+##        cost:  1 
+##      degree:  4 
+##      coef.0:  0 
+## 
+## Number of Support Vectors:  9377
+## 
+##  ( 4691 4686 )
+## 
+## 
+## Number of Classes:  2 
+## 
+## Levels: 
+##  0 1</code></pre>
+<pre class="r"><code># generovanie predpovedí
+svmPredictionsPolynomial &lt;- predict(svmModelPolynomial, newdata = testData)
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
+svmPredictionsPolynomial &lt;- factor(svmPredictionsPolynomial, levels = levels(testData$warning))
+# Confusion Matrix pre SVM model
+svmConfMatrixPolynomial &lt;- table(Predicted = svmPredictionsPolynomial, Actual = testData$warning)
+print(svmConfMatrixPolynomial)</code></pre>
+<pre><code>##          Actual
+## Predicted    0    1
+##         0 1333  231
+##         1 1600 4072</code></pre>
+<pre class="r"><code># pokročilé vyhodnotie
+confusionMatrix(svmPredictionsPolynomial, testData$warning)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 1333  231
+##          1 1600 4072
+##                                           
+##                Accuracy : 0.747           
+##                  95% CI : (0.7368, 0.7569)
+##     No Information Rate : 0.5947          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.433           
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
+##                                           
+##             Sensitivity : 0.4545          
+##             Specificity : 0.9463          
+##          Pos Pred Value : 0.8523          
+##          Neg Pred Value : 0.7179          
+##              Prevalence : 0.4053          
+##          Detection Rate : 0.1842          
+##    Detection Prevalence : 0.2161          
+##       Balanced Accuracy : 0.7004          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+</div>
+<div id="zmena-kernelu-na-linear" class="section level4">
+<h4>Zmena kernelu na Linear</h4>
+<pre class="r"><code># trenovanie SVM modelu
+svmModelLinear &lt;- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = &quot;polynomial&quot;, cost = 1, scale = TRUE)
+summary(svmModelLinear)</code></pre>
+<pre><code>## 
+## Call:
+## svm(formula = warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, 
+##     kernel = &quot;polynomial&quot;, cost = 1, scale = TRUE)
+## 
+## 
+## Parameters:
+##    SVM-Type:  C-classification 
+##  SVM-Kernel:  polynomial 
+##        cost:  1 
+##      degree:  3 
+##      coef.0:  0 
+## 
+## Number of Support Vectors:  9904
+## 
+##  ( 4952 4952 )
+## 
+## 
+## Number of Classes:  2 
+## 
+## Levels: 
+##  0 1</code></pre>
+<pre class="r"><code># generovanie predpovedí
+svmPredictionsLinear &lt;- predict(svmModelLinear, newdata = testData)
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
+svmPredictionsLinear &lt;- factor(svmPredictionsLinear, levels = levels(testData$warning))
+# Confusion Matrix pre SVM model
+svmConfMatrixLinear &lt;- table(Predicted = svmPredictionsLinear, Actual = testData$warning)
+print(svmConfMatrixLinear)</code></pre>
+<pre><code>##          Actual
+## Predicted    0    1
+##         0 1456  190
+##         1 1477 4113</code></pre>
+<pre class="r"><code># pokročilé vyhodnotie
+confusionMatrix(svmPredictionsLinear, testData$warning)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 1456  190
+##          1 1477 4113
+##                                           
+##                Accuracy : 0.7696          
+##                  95% CI : (0.7597, 0.7793)
+##     No Information Rate : 0.5947          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.4862          
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
+##                                           
+##             Sensitivity : 0.4964          
+##             Specificity : 0.9558          
+##          Pos Pred Value : 0.8846          
+##          Neg Pred Value : 0.7358          
+##              Prevalence : 0.4053          
+##          Detection Rate : 0.2012          
+##    Detection Prevalence : 0.2275          
+##       Balanced Accuracy : 0.7261          
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>

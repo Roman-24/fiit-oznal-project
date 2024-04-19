@@ -617,6 +617,7 @@ table(Predicted = ldaPredictionsTweak1, Actual = testData$warning)
 ```
 
 ### SVM
+
 SVM sú typom algoritmu učenia pod dohľadom, ktorý sa používa na klasifikačné aj regresné úlohy.
 Sú obzvlášť výkonné pre vysokorozmerné údaje.
 Cieľom SVM je nájsť najlepšiu oddeľujúcu hyperplochu, ktorá rozdeľuje rôzne triedy v priestore príznakov.
@@ -627,17 +628,26 @@ Je to užitočné najmä vtedy, keď hranica medzi triedami nie je lineárna.
 Použitím funkcie jadra môže SVM vykonávať zložité klasifikácie pomocou lineárneho klasifikátora implicitným mapovaním vstupných údajov do vysokodimenzionálnych priestorov príznakov.
 
 #### Radial Basis Function (RBF) Kernel
+
 Kernel RBF je jednou z najbežnejších funkcií používaných v SVM. Označuje sa aj ako Gaussov kernel.
 Výhody použitia jadra RBF v SVM
 - RBF jadro je veľmi flexibilné a dokáže riešiť prípady, keď je vzťah medzi značkami tried a atribútmi nelineárny.
 - Funguje dobre vo vysokodimenzionálnych priestoroch, aj keď je počet dimenzií väčší ako počet vzoriek.
 - Je účinný v scenároch, kde dátové body nie sú lineárne oddeliteľné.
+
 #### Others
-kernel options available in e1071:
-- Linear Kernel: This kernel is the simplest, where the prediction is based on the linear combination of the features. It's used when the data is linearly separable. You can specify it with kernel = "linear".
-- Polynomial Kernel: This kernel allows for curved boundaries in the feature space. It's defined by the degree of the polynomial. Higher degrees can fit more complex structures but also risk overfitting. It can be specified using kernel = "polynomial", and you can also set the degree with the degree parameter.
-- Radial Basis Function (RBF) Kernel: Also known as the Gaussian kernel, this is a popular choice for many classification problems. It can map the data into an infinite-dimensional space and is effective in handling non-linear relationships. It's used with kernel = "radial".
-- Sigmoid Kernel: This kernel functions like the sigmoid function in logistic regression. It can be specified with kernel = "sigmoid". This is similar to a two-layer, perceptron neural network.
+
+kernel možnosti v e1071:
+
+- Linear Kernel: je najjednoduchšie, pričom predikcia je založená na lineárnej kombinácii prvkov. Používa sa, keď sú údaje lineárne oddeliteľné. Môžete ho zadať pomocou kernel = "linear".
+- Polynomial Kernel: umožňuje ohraničiť priestor prvkov zakrivenými hranicami. Je definované stupňom polynómu. Vyššie stupne môžu vyhovovať zložitejším štruktúram, ale hrozí aj riziko nadmerného prispôsobenia. Možno ho zadať pomocou kernel = "polynomial" a stupeň môžete nastaviť aj pomocou parametra degree.
+- Radial Basis Function (RBF) Kernel: známe aj ako Gaussovo jadro, je obľúbenou voľbou pre mnohé klasifikačné problémy. Dokáže mapovať údaje do nekonečne rozmerného priestoru a je účinné pri spracovaní nelineárnych vzťahov. Používa sa s jadrom = "radiálny".
+- Sigmoid Kernel: funguje ako sigmoidná funkcia v logistickej regresii. Možno ho zadať pomocou kernel = "sigmoid". Je to podobné dvojvrstvovej perceptrónovej neurónovej sieti.
+
+#### Params
+
+- Cost - riadi kompromis medzi dosiahnutím nízkej chyby na trénovaných údajoch a minimalizáciou zložitosti modelu pre lepšiu generalizáciu. Vyššia cena sa snaží správne klasifikovať všetky trénovacie príklady (čo môže viesť k nadmernému prispôsobeniu), zatiaľ čo nižšia cena môže viesť k všeobecnejšiemu riešeniu, aj keď nesprávne klasifikuje viac bodov. Tu uvedená voľba 1 je štandardným východiskovým bodom, ale mala by sa vyladiť, často pomocou techník, ako je cross-validation
+- Scale - určuje, či sa majú predikčné premenné pred trénovaním modelu škálovať tak, aby mali nulovú strednú hodnotu a jednotkový rozptyl. Škálovanie je dôležité najmä pre SVM, pretože môže výrazne ovplyvniť výkonnosť funkcie jadra tým, že zabezpečí, aby všetky prvky prispievali k výpočtom vzdialenosti v priestore prvkov rovnakou mierou. Pri používaní SVM je vo všeobecnosti dobrým zvykom škálovať údaje.
 ```{r}
 
 set.seed(123)
@@ -688,6 +698,38 @@ svmConfMatrixTweak2 <- table(Predicted = svmPredictionsTweak2, Actual = testData
 print(svmConfMatrixTweak2)
 # pokročilé vyhodnotie
 confusionMatrix(svmPredictionsTweak2, testData$warning)
+```
+
+#### Zmena kernelu na Polynomial
+Stupeň polynómu je kľúčovým parametrom, pretože určuje flexibilitu rozhodovacej hranice. Vyšší stupeň umožňuje, aby sa hranica viac zakrivovala, čím potenciálne vyhovuje zložitejším vzorom v údajoch. Tým sa však zvyšuje aj riziko nadmerného prispôsobenia, najmä ak je stupeň príliš vysoký vzhľadom na zložitosť alebo množstvo údajov.
+```{r}
+# trenovanie SVM modelu
+svmModelPolynomial <- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = "polynomial", cost = 1, scale = TRUE, degree = 4)
+summary(svmModelPolynomial)
+# generovanie predpovedí
+svmPredictionsPolynomial <- predict(svmModelPolynomial, newdata = testData)
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
+svmPredictionsPolynomial <- factor(svmPredictionsPolynomial, levels = levels(testData$warning))
+# Confusion Matrix pre SVM model
+svmConfMatrixPolynomial <- table(Predicted = svmPredictionsPolynomial, Actual = testData$warning)
+print(svmConfMatrixPolynomial)
+# pokročilé vyhodnotie
+confusionMatrix(svmPredictionsPolynomial, testData$warning)
+```
+#### Zmena kernelu na Linear
+```{r}
+# trenovanie SVM modelu
+svmModelLinear <- svm(warning ~ PM2.5 + PM10 + NH3 + C2H3NO5, data = trainData, kernel = "polynomial", cost = 1, scale = TRUE)
+summary(svmModelLinear)
+# generovanie predpovedí
+svmPredictionsLinear <- predict(svmModelLinear, newdata = testData)
+# prevod predpovedí na faktor s úrovňami ako v testovacích údajoch
+svmPredictionsLinear <- factor(svmPredictionsLinear, levels = levels(testData$warning))
+# Confusion Matrix pre SVM model
+svmConfMatrixLinear <- table(Predicted = svmPredictionsLinear, Actual = testData$warning)
+print(svmConfMatrixLinear)
+# pokročilé vyhodnotie
+confusionMatrix(svmPredictionsLinear, testData$warning)
 ```
 
 ## Porovnanie modelov klasifikácie
