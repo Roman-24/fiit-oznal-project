@@ -326,3 +326,89 @@ Významnejšie korelácie sa javia byť medzi týmito atribútmi: <br>
 - PM10 - C2H3NO5 <br>
 
 # Štatistika
+```{r}
+bayes_df <- df_nums_only[, c('warning', 'PM2.5', 'PM10', 'C2H3NO5', 'NH3', 'SO2', 'CO')]
+
+network_structure <- bnlearn::hc(bayes_df)
+plot(network_structure)
+```
+
+## Ration
+
+```{r}
+# Define thresholds for each pollutant
+threshold_pm2_5 <- mean(bayes_df$PM2.5)
+threshold_pm10 <- mean(bayes_df$PM10)
+threshold_co <- mean(bayes_df$CO)
+threshold_so2 <- mean(bayes_df$SO2)
+threshold_nh3 <- mean(bayes_df$NH3)
+threshold_c2h3no5 <- mean(bayes_df$C2H3NO5)
+
+# Create warning columns based on these thresholds
+bayes_df$warning_pm2_5 <- ifelse(bayes_df$PM2.5 > threshold_pm2_5, "Warning", "No Warning")
+bayes_df$warning_pm10 <- ifelse(bayes_df$PM10 > threshold_pm10, "Warning", "No Warning")
+bayes_df$warning_co <- ifelse(bayes_df$CO > threshold_co, "Warning", "No Warning")
+bayes_df$warning_so2 <- ifelse(bayes_df$SO2 > threshold_so2, "Warning", "No Warning")
+bayes_df$warning_nh3 <- ifelse(bayes_df$NH3 > threshold_nh3, "Warning", "No Warning")
+bayes_df$warning_c2h3no5 <- ifelse(bayes_df$C2H3NO5 > threshold_c2h3no5, "Warning", "No Warning")
+
+# View the updated dataframe
+head(bayes_df)
+
+```
+
+## Proportion
+
+```{r}
+# Calculate the sum of "Warning" entries for each pollutant and divide by the total count
+proportion_warning_pm2_5 <- sum(bayes_df$warning_pm2_5 == "Warning", na.rm = TRUE) / length(bayes_df$warning_pm2_5)
+proportion_warning_pm10 <- sum(bayes_df$warning_pm10 == "Warning", na.rm = TRUE) / length(bayes_df$warning_pm10)
+proportion_warning_co <- sum(bayes_df$warning_co == "Warning", na.rm = TRUE) / length(bayes_df$warning_co)
+proportion_warning_so2 <- sum(bayes_df$warning_so2 == "Warning", na.rm = TRUE) / length(bayes_df$warning_so2)
+proportion_warning_nh3 <- sum(bayes_df$warning_nh3 == "Warning", na.rm = TRUE) / length(bayes_df$warning_nh3)
+proportion_warning_c2h3no5 <- sum(bayes_df$warning_c2h3no5 == "Warning", na.rm = TRUE) / length(bayes_df$warning_c2h3no5)
+
+# Print the calculated proportions
+cat("Proportion of Warnings for PM2.5:", proportion_warning_pm2_5, "\n")
+cat("Proportion of Warnings for PM10:", proportion_warning_pm10, "\n")
+cat("Proportion of Warnings for CO:", proportion_warning_co, "\n")
+cat("Proportion of Warnings for SO2:", proportion_warning_so2, "\n")
+cat("Proportion of Warnings for NH3:", proportion_warning_nh3, "\n")
+cat("Proportion of Warnings for C2H3NO5:", proportion_warning_c2h3no5, "\n")
+
+
+```
+
+
+## Probability Questions
+
+### 1. Joint Probability
+
+**Question:** What is the joint probability of receiving a warning for both PM2.5 and SO2 being in the "High" category?
+
+**Mathematical Representation:**
+
+$$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} = \text{"High"}) $$
+
+### 2. Marginal Probability
+
+**Question:** What is the marginal probability that the NH3 level triggers a warning?
+
+**Mathematical Representation:**
+
+$$ P(\text{Warning}_{\text{NH3}} = \text{"Warning"}) $$
+
+### 3. Conditional Probability Questions
+
+**Question 1:** Given that a warning has been issued for PM10, what is the probability that CO also exceeds its threshold level?
+
+**Mathematical Representation:**
+
+$$ P(\text{Warning}_{\text{CO}} = \text{"Warning"} \mid \text{Warning}_{\text{PM10}} = \text{"Warning"}) $$
+
+**Question 2:** What is the probability that PM2.5 is in the "High" category given that NH3 is also in the "High" category?
+
+**Mathematical Representation:**
+
+$$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"} \mid \text{Warning}_{\text{NH3}} = \text{"High"}) $$
+
