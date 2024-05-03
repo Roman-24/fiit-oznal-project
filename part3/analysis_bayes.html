@@ -860,21 +860,25 @@ NH3 vyvolá warning?</p>
 <p><span class="math display">\[ P(\text{Warning}_{\text{NH3}} =
 \text{&quot;Warning&quot;}) \]</span></p>
 </div>
-<div id="conditional-probability-questions" class="section level3">
-<h3>3. Conditional Probability Questions</h3>
-<p><strong>Otázka 1:</strong> Vzhľadom na to, že bolo vydané varovanie
-pre PM10, aká je pravdepodobnosť, že aj CO prekročí svoju prahovú
-hodnotu?</p>
+<div id="conditional-probability" class="section level3">
+<h3>3. Conditional Probability</h3>
+<p><strong>Otázka 1:</strong> Aká je pravdepodobnosť, že dostaneme
+varovanie pre PM10, vzhľadom na to, že úrovne PM2,5 a CO vyvolali
+varovanie?</p>
 <p><strong>Matematická reprezentácia:</strong></p>
-<p><span class="math display">\[ P(\text{Warning}_{\text{CO}} =
-\text{&quot;Warning&quot;} \mid \text{Warning}_{\text{PM10}} =
-\text{&quot;Warning&quot;}) \]</span></p>
-<p><strong>Otázka 2:</strong> Aká je pravdepodobnosť, že PM2,5 je v
-kategórii “vysoká”, ak je NH3 tiež v kategórii “vysoká”?</p>
-<p><strong>Matematická reprezentácia:</strong></p>
-<p><span class="math display">\[ P(\text{Warning}_{\text{PM2.5}} =
-\text{&quot;High&quot;} \mid \text{Warning}_{\text{NH3}} =
-\text{&quot;High&quot;}) \]</span></p>
+<p><span class="math display">\[
+P(\text{Warning}_{\text{PM10}} = \text{&quot;Warning&quot;} \mid
+\text{Warning}_{\text{PM2.5}} = \text{&quot;Warning&quot;},
+\text{Warning}_{\text{CO}} = \text{&quot;Warning&quot;})
+\]</span></p>
+<p><strong>Otázka 2:</strong> Aká je pravdepodobnosť, že dostaneme
+varovanie pre SO2, vzhľadom na to, že neexistuje žiadne varovanie pre
+NH3 a vysoká koncentrácia (varovanie) pre C2H3NO5?</p>
+<p><strong>Matematická reprezentácia:</strong> <span class="math display">\[
+P(\text{Warning}_{\text{SO2}} = \text{&quot;Warning&quot;} \mid
+\text{Warning}_{\text{NH3}} = \text{&quot;No Warning&quot;},
+\text{Warning}_{\text{C2H3NO5}} = \text{&quot;Warning&quot;})
+\]</span></p>
 </div>
 </div>
 </div>

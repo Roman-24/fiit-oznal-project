@@ -397,17 +397,20 @@ $$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} 
 
 $$ P(\text{Warning}_{\text{NH3}} = \text{"Warning"}) $$
 
-### 3. Conditional Probability Questions
+### 3. Conditional Probability
 
-**Otázka 1:** Vzhľadom na to, že bolo vydané varovanie pre PM10, aká je pravdepodobnosť, že aj CO prekročí svoju prahovú hodnotu?
-
-**Matematická reprezentácia:**
-
-$$ P(\text{Warning}_{\text{CO}} = \text{"Warning"} \mid \text{Warning}_{\text{PM10}} = \text{"Warning"}) $$
-
-**Otázka 2:** Aká je pravdepodobnosť, že PM2,5 je v kategórii "vysoká", ak je NH3 tiež v kategórii "vysoká"?
+**Otázka 1:** Aká je pravdepodobnosť, že dostaneme varovanie pre PM10, vzhľadom na to, že úrovne PM2,5 a CO vyvolali varovanie?
 
 **Matematická reprezentácia:**
 
-$$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"} \mid \text{Warning}_{\text{NH3}} = \text{"High"}) $$
+$$
+P(\text{Warning}_{\text{PM10}} = \text{"Warning"} \mid \text{Warning}_{\text{PM2.5}} = \text{"Warning"}, \text{Warning}_{\text{CO}} = \text{"Warning"})
+$$
+
+**Otázka 2:** Aká je pravdepodobnosť, že dostaneme varovanie pre SO2, vzhľadom na to, že neexistuje žiadne varovanie pre NH3 a vysoká koncentrácia (varovanie) pre C2H3NO5?
+
+**Matematická reprezentácia:**
+$$
+P(\text{Warning}_{\text{SO2}} = \text{"Warning"} \mid \text{Warning}_{\text{NH3}} = \text{"No Warning"}, \text{Warning}_{\text{C2H3NO5}} = \text{"Warning"})
+$$
 
