@@ -360,7 +360,7 @@ head(bayes_df)
 ## Proporcia
 
 ```{r}
-# Vypočítajte súčet "Warnings" pre každú znečisťujúcu látku a vydelíme ich ich celkovým počtom, vypočítame proporciu
+# Vypočítame súčet "Warnings" pre každú znečisťujúcu látku a vydelíme ich ich celkovým počtom, vypočítame proporciu
 proportion_warning_pm2_5 <- sum(bayes_df$warning_pm2_5 == "Warning", na.rm = TRUE) / length(bayes_df$warning_pm2_5)
 proportion_warning_pm10 <- sum(bayes_df$warning_pm10 == "Warning", na.rm = TRUE) / length(bayes_df$warning_pm10)
 proportion_warning_co <- sum(bayes_df$warning_co == "Warning", na.rm = TRUE) / length(bayes_df$warning_co)
@@ -383,11 +383,11 @@ cat("Proportion of Warnings for C2H3NO5:", proportion_warning_c2h3no5, "\n")
 
 ### 1. Joint Probability
 
-**Otázka:** Aká je spoločná pravdepodobnosť, že dostanete warning pre PM2,5 a SO2 v kategórii "High"?
+**Otázka:** Aká je spoločná pravdepodobnosť, že dostaneme warning pre PM2,5 a SO2 v kategórii "vysoká"?
 
 **Matematická reprezentácia:**
 
-$$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} = \text{"High"}) $$
+$$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} = \text{"vysoká"}) $$
 
 ### 2. Marginal Probability
 
