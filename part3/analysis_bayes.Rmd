@@ -68,6 +68,7 @@ library(MASS)
 library(reshape2)
 library(gridExtra)
 library(pROC)
+library(bnlearn)
 ```
 Načítanie dát
 ```{r}
@@ -329,7 +330,11 @@ Významnejšie korelácie sa javia byť medzi týmito atribútmi: <br>
 ```{r}
 bayes_df <- df_nums_only[, c('warning', 'PM2.5', 'PM10', 'C2H3NO5', 'NH3', 'SO2', 'CO')]
 
+# Vytvorenie Bayesian network modelu
 network_structure <- bnlearn::hc(bayes_df)
+
+# Fitnutie Bayesian network modelu
+fitted_network <- bn.fit(network_structure, data = bayes_df)
 plot(network_structure)
 ```
 
@@ -375,6 +380,11 @@ cat("Proportion of Warnings for SO2:", proportion_warning_so2, "\n")
 cat("Proportion of Warnings for NH3:", proportion_warning_nh3, "\n")
 cat("Proportion of Warnings for C2H3NO5:", proportion_warning_c2h3no5, "\n")
 
+# Vytvoríme nový stĺpec s proporciou pre každú znečisťujúcu látku
+proportions <- sapply(bayes_df[, grep("warning_", names(bayes_df))], function(x) sum(x == "Warning", na.rm = TRUE) / length(x))
+print(proportions)
+
+
 
 ```
 
@@ -389,6 +399,12 @@ cat("Proportion of Warnings for C2H3NO5:", proportion_warning_c2h3no5, "\n")
 
 $$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} = \text{"vysoká"}) $$
 
+#### Riešenie
+```{r}
+joint_prob <- cpquery(fitted_network, (warning_PM2.5 == "Warning" & warning_SO2 == "Warning"))
+print(paste("Joint Probability of Warning for PM2.5 and SO2: ", joint_prob))
+```
+
 ### 2. Marginal Probability
 
 **Otázka:** Aká je hraničná pravdepodobnosť, že hladina NH3 vyvolá warning?
@@ -396,6 +412,13 @@ $$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} 
 **Matematická reprezentácia:**
 
 $$ P(\text{Warning}_{\text{NH3}} = \text{"Warning"}) $$
+
+#### Riešenie
+
+```{r}
+marginal_prob_nh3 <- sum(bayes_df$warning_nh3 == "Warning") / nrow(bayes_df)
+print(paste("Marginal Probability of Warning for NH3: ", marginal_prob_nh3))
+```
 
 ### 3. Conditional Probability
 
@@ -407,6 +430,14 @@ $$
 P(\text{Warning}_{\text{PM10}} = \text{"Warning"} \mid \text{Warning}_{\text{PM2.5}} = \text{"Warning"}, \text{Warning}_{\text{CO}} = \text{"Warning"})
 $$
 
+#### Riešenie
+
+```{r}
+cond_prob_pm10 <- cpquery(fitted_network, event = (warning_PM10 == "Warning"),
+                          evidence = (warning_PM2.5 == "Warning" & warning_CO == "Warning"))
+print(paste("Conditional Probability of Warning for PM10 given Warnings for PM2.5 and CO: ", cond_prob_pm10))
+```
+
 **Otázka 2:** Aká je pravdepodobnosť, že dostaneme varovanie pre SO2, vzhľadom na to, že neexistuje žiadne varovanie pre NH3 a vysoká koncentrácia (varovanie) pre C2H3NO5?
 
 **Matematická reprezentácia:**
@@ -414,3 +445,9 @@ $$
 P(\text{Warning}_{\text{SO2}} = \text{"Warning"} \mid \text{Warning}_{\text{NH3}} = \text{"No Warning"}, \text{Warning}_{\text{C2H3NO5}} = \text{"Warning"})
 $$
 
+#### Riešenie
+```{r}
+cond_prob_so2 <- cpquery(fitted_network, event = (warning_SO2 == "Warning"),
+                         evidence = (warning_NH3 == "No Warning" & warning_C2H3NO5 == "Warning"))
+print(paste("Conditional Probability of Warning for SO2 given No Warning for NH3 and Warning for C2H3NO5: ", cond_prob_so2))
+```
