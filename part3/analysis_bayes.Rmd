@@ -401,8 +401,23 @@ $$ P(\text{Warning}_{\text{PM2.5}} = \text{"High"}, \text{Warning}_{\text{SO2}} 
 
 #### Riešenie
 ```{r}
-joint_prob <- cpquery(fitted_network, (warning_PM2.5 == "Warning" & warning_SO2 == "Warning"))
-print(paste("Joint Probability of Warning for PM2.5 and SO2: ", joint_prob))
+# Definovanie prahových hodnôt
+threshold_pm2_5 <- mean(bayes_df$PM2.5)
+threshold_so2 <- mean(bayes_df$SO2)
+
+# Vytvorenie stĺpcov s varovaním na základe prahových hodnôt
+bayes_df$warning_pm2_5 <- ifelse(bayes_df$PM2.5 > threshold_pm2_5, "Warning", "No Warning")
+bayes_df$warning_so2 <- ifelse(bayes_df$SO2 > threshold_so2, "Warning", "No Warning")
+bayes_df$warning_pm2_5 <- as.factor(bayes_df$warning_pm2_5)
+bayes_df$warning_so2 <- as.factor(bayes_df$warning_so2)
+
+# Vypočítanie spoločnej pravdepodobnosti
+joint_count <- sum(bayes_df$warning_pm2_5 == "Warning" & bayes_df$warning_so2 == "Warning")
+total_count <- nrow(bayes_df)
+joint_probability <- joint_count / total_count
+
+print(paste("Spoločná pravdepodobnosť výstrahy pre PM2,5 a SO2: ", joint_probability))
+
 ```
 
 ### 2. Marginal Probability
@@ -417,7 +432,7 @@ $$ P(\text{Warning}_{\text{NH3}} = \text{"Warning"}) $$
 
 ```{r}
 marginal_prob_nh3 <- sum(bayes_df$warning_nh3 == "Warning") / nrow(bayes_df)
-print(paste("Marginal Probability of Warning for NH3: ", marginal_prob_nh3))
+print(paste("Okrajová pravdepodobnosť výstrahy pre NH3: ", marginal_prob_nh3))
 ```
 
 ### 3. Conditional Probability
@@ -433,12 +448,37 @@ $$
 #### Riešenie
 
 ```{r}
-cond_prob_pm10 <- cpquery(
-        fitted_network,
-        event = (warning_PM10 == "Warning"),
-        evidence = (warning_PM2.5 == "Warning" & warning_CO == "Warning" & warning_SO2 == "Warning")
+# Vytvorenie varovných stĺpcov
+bayes_df$warning_pm2_5 <- ifelse(bayes_df$PM2.5 > mean(bayes_df$PM2.5), "Warning", "No Warning")
+bayes_df$warning_pm10 <- ifelse(bayes_df$PM10 > mean(bayes_df$PM10), "Warning", "No Warning")
+bayes_df$warning_co <- ifelse(bayes_df$CO > mean(bayes_df$CO), "Warning", "No Warning")
+bayes_df$warning_so2 <- ifelse(bayes_df$SO2 > mean(bayes_df$SO2), "Warning", "No Warning")
+
+bayes_df$warning_pm2_5 <- as.factor(bayes_df$warning_pm2_5)
+bayes_df$warning_pm10 <- as.factor(bayes_df$warning_pm10)
+bayes_df$warning_co <- as.factor(bayes_df$warning_co)
+bayes_df$warning_so2 <- as.factor(bayes_df$warning_so2)
+
+# vypocitanme P(A ∩ B)
+joint_count <- sum(
+        bayes_df$warning_pm10 == "Warning" &
+                bayes_df$warning_pm2_5 == "Warning" &
+                bayes_df$warning_co == "Warning" &
+                bayes_df$warning_so2 == "Warning"
 )
-print(paste("Conditional Probability of Warning for PM10 given Warnings for PM2.5, CO, and SO2: ", cond_prob_pm10))
+
+# vypocitame P(B)
+condition_count <- sum(
+        bayes_df$warning_pm2_5 == "Warning" &
+                bayes_df$warning_co == "Warning" &
+                bayes_df$warning_so2 == "Warning"
+)
+
+# Podmieňujúca pravdepodobnosť: P(PM10 | PM2.5, CO, SO2)
+cond_prob_pm10 <- joint_count / condition_count
+
+print(paste("Podmienená pravdepodobnosť výstrahy pre PM10 vzhľadom na výstrahy pre PM2,5, CO a SO2:", cond_prob_pm10))
+
 ```
 
 **Otázka 2:** Aká je pravdepodobnosť, že dostaneme varovanie pre SO2, vzhľadom na to, že neexistuje žiadne varovanie pre NH3 a CO a vysoká koncentrácia (varovanie) pre C2H3NO5 a CH4?
@@ -450,11 +490,3 @@ P(\text{Warning}_{\text{SO2}} = \text{"Warning"} \mid \text{Warning}_{\text{NH3}
 $$
 
 #### Riešenie
-```{r}
-cond_prob_so2 <- cpquery(
-        fitted_network,
-        event = (warning_SO2 == "Warning"),
-        evidence = (warning_NH3 == "No Warning" & warning_CO == "No Warning" & warning_C2H3NO5 == "Warning" & warning_CH4 == "Warning")
-)
-print(paste("Conditional Probability of Warning for SO2 given No Warning for NH3 and CO and Warning for C2H3NO5 and CH4: ", cond_prob_so2))
-```
